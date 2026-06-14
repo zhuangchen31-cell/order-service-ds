@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>电商订单管理系统</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- ==================== 登录/注册页 ==================== -->
+  <div id="app-auth">
+    <div class="auth-wrapper">
+      <div class="auth-card">
+
+        <!-- 登录表单 -->
+        <form id="form-login">
+          <h2>🔐 电商订单系统</h2>
+          <p class="subtitle">登录您的账号</p>
+          <div class="form-group">
+            <label>用户名</label>
+            <input type="text" id="login-username" placeholder="请输入用户名" autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label>密码</label>
+            <input type="password" id="login-password" placeholder="请输入密码" autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn btn-primary">登 录</button>
+          <p class="auth-link">
+            还没有账号？<a onclick="App.toggleAuthForm('register')">立即注册</a>
+          </p>
+        </form>
+
+        <!-- 注册表单 -->
+        <form id="form-register" class="hidden">
+          <h2>📝 创建账号</h2>
+          <p class="subtitle">注册新用户</p>
+          <div class="form-group">
+            <label>用户名 *</label>
+            <input type="text" id="reg-username" placeholder="3-50个字符" autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label>密码 *</label>
+            <input type="password" id="reg-password" placeholder="至少6个字符" autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label>手机号</label>
+            <input type="text" id="reg-phone" placeholder="选填">
+          </div>
+          <div class="form-group">
+            <label>邮箱</label>
+            <input type="email" id="reg-email" placeholder="选填">
+          </div>
+          <button type="submit" class="btn btn-primary">注 册</button>
+          <p class="auth-link">
+            已有账号？<a onclick="App.toggleAuthForm('login')">立即登录</a>
+          </p>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 主应用 ==================== -->
+  <div id="app-main" class="hidden">
+
+    <!-- 顶部导航 -->
+    <header class="header">
+      <div class="logo">🛒 电商订单管理系统</div>
+      <div class="user-info">
+        <span>👤 <span id="header-username">用户</span></span>
+        <button class="btn btn-default" style="height:32px;padding:0 14px;font-size:13px;" id="btn-logout">退出登录</button>
+      </div>
+    </header>
+
+    <div class="container">
+
+      <!-- 统计卡片 -->
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-value" id="stat-total">0</div><div class="stat-label">总订单数</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-pending">0</div><div class="stat-label">待支付</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-paid">0</div><div class="stat-label">已支付</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-shipped">0</div><div class="stat-label">已发货</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-received">0</div><div class="stat-label">已收货</div></div>
+        <div class="stat-card"><div class="stat-value" id="stat-today">0</div><div class="stat-label">今日订单</div></div>
+      </div>
+
+      <!-- 搜索栏 -->
+      <div class="search-bar">
+        <div class="form-group">
+          <label>用户ID</label>
+          <input type="number" id="filter-userId" placeholder="按用户筛选">
+        </div>
+        <div class="form-group">
+          <label>订单状态</label>
+          <select id="filter-status">
+            <option value="">全部</option>
+            <option value="0">待支付</option>
+            <option value="1">已支付</option>
+            <option value="2">已发货</option>
+            <option value="3">已收货</option>
+            <option value="4">已取消</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>关键词</label>
+          <input type="text" id="filter-keyword" placeholder="订单号/收货人/电话">
+        </div>
+        <div class="form-group">
+          <label>开始日期</label>
+          <input type="date" id="filter-startDate">
+        </div>
+        <div class="form-group">
+          <label>结束日期</label>
+          <input type="date" id="filter-endDate">
+        </div>
+        <button class="btn btn-primary" id="btn-search">🔍 查询</button>
+        <button class="btn btn-default" id="btn-reset">↻ 重置</button>
+        <button class="btn btn-success" onclick="App.showCreateModal()">＋ 新建订单</button>
+      </div>
+
+      <!-- 订单表格 -->
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>订单编号</th>
+              <th>用户ID</th>
+              <th>金额</th>
+              <th>状态</th>
+              <th>收货人</th>
+              <th>电话</th>
+              <th>地址</th>
+              <th>创建时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="order-tbody">
+            <tr><td colspan="9" style="text-align:center;padding:40px;color:#999;">加载中...</td></tr>
+          </tbody>
+        </table>
+        <div class="pagination">
+          <div id="pagination-info"></div>
+          <div class="pages" id="pagination-pages"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== 查看详情 Modal ==================== -->
+  <div id="modal-view" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>📋 订单详情</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body"></div>
+      <div class="modal-footer">
+        <button class="btn btn-default" onclick="App.closeModal('modal-view')">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 编辑/创建 Modal ==================== -->
+  <div id="modal-edit" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-edit-title">编辑订单</h3>
+        <button class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>订单编号</label>
+          <input type="text" id="edit-orderNo" placeholder="留空自动生成">
+        </div>
+        <div class="form-group">
+          <label>用户ID *</label>
+          <input type="number" id="edit-userId" placeholder="请输入用户ID">
+        </div>
+        <div class="form-group">
+          <label>订单金额</label>
+          <input type="number" step="0.01" id="edit-totalAmount" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label>订单状态</label>
+          <select id="edit-status">
+            <option value="0">待支付</option>
+            <option value="1">已支付</option>
+            <option value="2">已发货</option>
+            <option value="3">已收货</option>
+            <option value="4">已取消</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>收货人</label>
+          <input type="text" id="edit-receiverName" placeholder="收货人姓名">
+        </div>
+        <div class="form-group">
+          <label>联系电话</label>
+          <input type="text" id="edit-receiverPhone" placeholder="收货人电话">
+        </div>
+        <div class="form-group">
+          <label>收货地址</label>
+          <input type="text" id="edit-shippingAddress" placeholder="收货地址">
+        </div>
+        <div class="form-group">
+          <label>备注</label>
+          <input type="text" id="edit-remark" placeholder="订单备注">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-default" onclick="App.closeModal('modal-edit')">取消</button>
+        <button class="btn btn-primary" id="btn-save-order">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
