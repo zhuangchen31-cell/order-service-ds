@@ -316,6 +316,9 @@ const ProductApp = (() => {
   let activePromoTag = null;
   let activeCountdown = null;
 
+  // 当前查看的商品数据（用于购物车操作）
+  let currentProduct = null;
+
   /**
    * 显示商品详情弹窗（父组件）
    *
@@ -330,6 +333,9 @@ const ProductApp = (() => {
   function showProductDetail(product) {
     const modal = $('#modal-product');
     if (!modal) return;
+
+    // 保存当前商品引用（供addToCart和buyNow使用）
+    currentProduct = product;
 
     // 构建详情HTML（包含子组件占位容器）
     modal.querySelector('.modal-body').innerHTML = `
@@ -362,8 +368,13 @@ const ProductApp = (() => {
             <p>${escapeHtml(product.description || '暂无描述')}</p>
           </div>
           <div class="detail-actions">
-            <button class="btn btn-primary" ${product.status === 0 ? 'disabled' : ''}>
+            <button class="btn btn-primary" ${product.status === 0 ? 'disabled' : ''}
+              onclick="ProductApp.buyNow(${product.id})">
               ${product.status === 1 ? '立即购买' : '已售罄'}
+            </button>
+            <button class="btn btn-success" ${product.status === 0 ? 'disabled' : ''}
+              onclick="ProductApp.addToCart(${product.id})">
+              🛒 加入购物车
             </button>
             <button class="btn btn-default" onclick="ProductApp.closeModal()">关闭</button>
           </div>
@@ -420,6 +431,66 @@ const ProductApp = (() => {
     }
 
     modal.classList.remove('hidden');
+  }
+
+  /**
+   * 添加商品到购物车
+   * 通过全局CartHelper操作Pinia Store
+   * @param {number} id - 商品ID
+   */
+  function addToCart(id) {
+    if (!currentProduct || currentProduct.id !== id) return;
+    if (currentProduct.status === 0) {
+      showToast('该商品已售罄', 'error');
+      return;
+    }
+
+    // 调用全局CartHelper（Pinia Store），实现跨页面状态共享
+    if (window.CartHelper) {
+      window.CartHelper.addToCart(currentProduct, 1);
+      showToast(`"${currentProduct.name}" 已加入购物车`, 'success');
+      // 更新导航栏购物车徽标
+      updateCartBadge();
+    } else {
+      // 降级：直接跳转到购物车页面
+      showToast('正在跳转到购物车...', 'info');
+      setTimeout(() => {
+        window.location.href = '/cart.html';
+      }, 500);
+    }
+  }
+
+  /**
+   * 立即购买
+   * 加入购物车后跳转到下单成功页面
+   * @param {number} id - 商品ID
+   */
+  function buyNow(id) {
+    if (!currentProduct || currentProduct.id !== id) return;
+    if (currentProduct.status === 0) {
+      showToast('该商品已售罄', 'error');
+      return;
+    }
+
+    // 加入购物车并立即跳转到下单成功页
+    if (window.CartHelper) {
+      window.CartHelper.addToCart(currentProduct, 1);
+    }
+    closeModal();
+    // 跳转到下单成功页面
+    window.location.href = '/order-success.html';
+  }
+
+  /**
+   * 更新导航栏购物车徽标数量
+   */
+  function updateCartBadge() {
+    const badges = document.querySelectorAll('.cart-badge');
+    const count = window.CartHelper ? window.CartHelper.getTotalCount() : 0;
+    badges.forEach(badge => {
+      badge.textContent = count;
+      badge.style.display = count > 0 ? 'inline-flex' : 'none';
+    });
   }
 
   /**
@@ -497,6 +568,9 @@ const ProductApp = (() => {
       mockBtn.addEventListener('click', toggleMockMode);
     }
 
+    // 更新购物车徽标
+    setTimeout(updateCartBadge, 300);
+
     console.log('商品应用已初始化，当前使用Mock数据模式');
   }
 
@@ -510,6 +584,8 @@ const ProductApp = (() => {
     viewProduct,
     closeModal,
     toggleMockMode,
+    addToCart,
+    buyNow,
     // 状态获取
     getCurrentPage: () => currentPage,
     getTotalProducts: () => totalProducts,

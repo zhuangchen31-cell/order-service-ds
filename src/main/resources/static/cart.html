@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>购物车 - 电商购物平台</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/cart.css">
+</head>
+<body>
+
+  <!-- 顶部导航 -->
+  <header class="header">
+    <div class="logo">🛒 电商购物平台 - 购物车</div>
+    <div class="nav-links">
+      <a href="/" class="nav-link">订单管理</a>
+      <a href="/product.html" class="nav-link">商品列表</a>
+      <a href="/cart.html" class="nav-link active">🛍️ 购物车
+        <span class="cart-badge" v-cloak>{{ totalCount }}</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Vue 3 + Pinia 购物车应用 -->
+  <div id="cart-app" v-cloak>
+
+    <!-- 加载状态 -->
+    <div class="cart-container" v-if="!loaded">
+      <div class="loading">正在加载购物车...</div>
+    </div>
+
+    <!-- 空购物车 -->
+    <div class="cart-container" v-else-if="cartStore.isEmpty">
+      <div class="cart-empty">
+        <div class="cart-empty-icon">🛒</div>
+        <h2>购物车是空的</h2>
+        <p>快去挑选心仪的商品吧！</p>
+        <a href="/product.html" class="btn btn-primary">去逛逛</a>
+      </div>
+    </div>
+
+    <!-- 购物车有商品 -->
+    <div class="cart-container" v-else>
+      <div class="cart-header">
+        <h2>🛍️ 我的购物车</h2>
+        <span class="cart-count">共 {{ cartStore.totalCount }} 件商品</span>
+      </div>
+
+      <!-- 全选工具栏 -->
+      <div class="cart-toolbar">
+        <label class="select-all">
+          <input type="checkbox"
+                 :checked="isAllChecked"
+                 @change="toggleAll($event.target.checked)">
+          <span>全选</span>
+        </label>
+        <button class="btn btn-danger btn-sm"
+                @click="handleClearCart">
+          🗑️ 清空购物车
+        </button>
+      </div>
+
+      <!-- 商品列表 -->
+      <div class="cart-items">
+        <div class="cart-item" v-for="item in cartStore.items" :key="item.id">
+          <!-- 选择框 -->
+          <div class="cart-item-check">
+            <input type="checkbox"
+                   :checked="item.checked"
+                   @change="cartStore.toggleCheck(item.id)">
+          </div>
+
+          <!-- 商品图片 -->
+          <div class="cart-item-image">
+            <img :src="item.image" :alt="item.name" loading="lazy">
+          </div>
+
+          <!-- 商品信息 -->
+          <div class="cart-item-info">
+            <div class="cart-item-name">{{ item.name }}</div>
+            <div class="cart-item-category" v-if="item.categoryName">
+              {{ item.categoryName }}
+            </div>
+            <div class="cart-item-price">¥{{ item.price.toFixed(2) }}</div>
+          </div>
+
+          <!-- 数量控制 -->
+          <div class="cart-item-qty">
+            <button class="qty-btn"
+                    @click="decreaseQty(item)"
+                    :disabled="item.quantity <= 1">−</button>
+            <input type="number"
+                   class="qty-input"
+                   :value="item.quantity"
+                   @change="handleQtyChange(item, $event)"
+                   min="1"
+                   :max="item.stock">
+            <button class="qty-btn"
+                    @click="increaseQty(item)"
+                    :disabled="item.quantity >= item.stock">+</button>
+          </div>
+
+          <!-- 小计 -->
+          <div class="cart-item-subtotal">
+            ¥{{ (item.price * item.quantity).toFixed(2) }}
+          </div>
+
+          <!-- 删除按钮 -->
+          <div class="cart-item-actions">
+            <button class="btn-delete"
+                    @click="handleRemoveItem(item.id)"
+                    title="删除">🗑️</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部结算栏 -->
+      <div class="cart-footer">
+        <div class="cart-footer-left">
+          <span class="selected-info">
+            已选 <strong>{{ cartStore.selectedCount }}</strong> 件
+          </span>
+        </div>
+        <div class="cart-footer-right">
+          <div class="cart-total">
+            <span class="total-label">合计：</span>
+            <span class="total-price">¥{{ cartStore.selectedTotalPrice.toFixed(2) }}</span>
+          </div>
+          <button class="btn btn-primary btn-lg"
+                  @click="handleCheckout"
+                  :disabled="cartStore.selectedCount === 0">
+            💳 立即结算
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast提示 -->
+    <div class="toast" v-if="toast.show" :class="'toast-' + toast.type">
+      {{ toast.message }}
+    </div>
+  </div>
+
+  <!-- Vue 3 CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <!-- Pinia CDN -->
+  <script src="https://unpkg.com/pinia@2/dist/pinia.iife.prod.js"></script>
+  <!-- 购物车Store -->
+  <script src="/js/store/cart-store.js"></script>
+
+  <script>
+    // ========== 创建Vue应用 ==========
+    const { createApp, ref, computed, onMounted, watch } = Vue;
+
+    const app = createApp({
+      // ========== 组件状态 ==========
+      setup() {
+        // 使用Pinia
+        const pinia = Pinia.createPinia();
+        app.use(pinia);
+
+        // 获取购物车Store
+        const cartStore = useCartStore();
+
+        // 页面状态
+        const loaded = ref(false);
+        const toast = ref({ show: false, message: '', type: 'success' });
+
+        // ========== 计算属性 ==========
+        const isAllChecked = computed(() => {
+          if (cartStore.items.length === 0) return false;
+          return cartStore.items.every(item => item.checked);
+        });
+
+        // ========== Toast提示 ==========
+        let toastTimer = null;
+        function showToast(message, type = 'success') {
+          if (toastTimer) clearTimeout(toastTimer);
+          toast.value = { show: true, message, type };
+          toastTimer = setTimeout(() => {
+            toast.value.show = false;
+          }, 2500);
+        }
+
+        // ========== 购物车操作 ==========
+        function decreaseQty(item) {
+          if (item.quantity > 1) {
+            cartStore.updateQuantity(item.id, item.quantity - 1);
+          }
+        }
+
+        function increaseQty(item) {
+          if (item.quantity < item.stock) {
+            cartStore.updateQuantity(item.id, item.quantity + 1);
+          } else {
+            showToast('已达到库存上限', 'error');
+          }
+        }
+
+        function handleQtyChange(item, event) {
+          const val = parseInt(event.target.value);
+          if (isNaN(val) || val < 1) {
+            event.target.value = item.quantity; // 恢复原值
+            return;
+          }
+          if (val > item.stock) {
+            showToast('超出库存数量', 'error');
+            event.target.value = item.stock;
+            cartStore.updateQuantity(item.id, item.stock);
+            return;
+          }
+          cartStore.updateQuantity(item.id, val);
+        }
+
+        function handleRemoveItem(productId) {
+          if (confirm('确定要删除该商品吗？')) {
+            cartStore.removeFromCart(productId);
+            showToast('已删除商品');
+          }
+        }
+
+        function handleClearCart() {
+          if (cartStore.items.length === 0) return;
+          if (confirm(`确定要清空购物车中全部 ${cartStore.totalCount} 件商品吗？`)) {
+            cartStore.clearCart();
+            showToast('购物车已清空');
+          }
+        }
+
+        function handleCheckout() {
+          const result = cartStore.checkout();
+          if (result.success) {
+            showToast('结算成功！即将跳转...', 'success');
+            setTimeout(() => {
+              window.location.href = '/order-success.html';
+            }, 800);
+          } else {
+            showToast(result.message, 'error');
+          }
+        }
+
+        function toggleAll(checked) {
+          cartStore.toggleAll(checked);
+        }
+
+        // ========== 全局购物车操作（供其他页面调用） ==========
+        // 暴露到window，使product.html等页面可以通过CartHelper.addToCart()操作购物车
+        window.CartHelper = {
+          addToCart(product, quantity) {
+            // 确保Store已加载
+            if (!cartStore.loadedFromStorage) {
+              cartStore.loadFromStorage();
+            }
+            cartStore.addToCart(product, quantity);
+          },
+          getTotalCount() {
+            if (!cartStore.loadedFromStorage) {
+              cartStore.loadFromStorage();
+            }
+            return cartStore.totalCount;
+          },
+          getStore() {
+            if (!cartStore.loadedFromStorage) {
+              cartStore.loadFromStorage();
+            }
+            return cartStore;
+          }
+        };
+
+        // ========== 生命周期 ==========
+        onMounted(() => {
+          // 从localStorage加载购物车数据
+          cartStore.loadFromStorage();
+          loaded.value = true;
+          console.log('🛒 购物车初始化完成，共', cartStore.totalCount, '件商品');
+        });
+
+        // ========== 暴露给模板 ==========
+        return {
+          loaded,
+          cartStore,
+          isAllChecked,
+          toast,
+          decreaseQty,
+          increaseQty,
+          handleQtyChange,
+          handleRemoveItem,
+          handleClearCart,
+          handleCheckout,
+          toggleAll
+        };
+      }
+    });
+
+    // 挂载应用
+    app.mount('#cart-app');
+  </script>
+</body>
+</html>
