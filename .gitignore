@@ -16,6 +16,9 @@ Thumbs.db
 # Logs
 *.log
 
+# H2 Database files
+data/
+
 # Temporary
 *.tmp
 *.bak

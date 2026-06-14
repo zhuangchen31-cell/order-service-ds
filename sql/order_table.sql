@@ -1,5 +1,5 @@
 -- 用户表
-CREATE TABLE `user` (
+CREATE TABLE `users` (
   `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '用户ID',
   `username` VARCHAR(50) NOT NULL COMMENT '用户名',
   `password` VARCHAR(255) NOT NULL COMMENT '密码(BCrypt加密)',

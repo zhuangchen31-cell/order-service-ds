@@ -1,6 +1,6 @@
 -- 测试数据
 -- 测试用户 (密码: 123456, BCrypt加密)
-INSERT INTO `user` (username, password, phone, email, role, enabled) VALUES
+INSERT INTO users (username, password, phone, email, role, enabled) VALUES
 ('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKFUi', '13800000000', 'admin@test.com', 'ADMIN', 1),
 ('testuser', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKFUi', '13900000000', 'test@test.com', 'USER', 1);
 

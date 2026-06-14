@@ -1,14 +1,24 @@
 server:
-  port: 8080
+  port: 8088
 
 spring:
   application:
     name: order-service
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/ecommerce?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: root
-    password: root
+    driver-class-name: org.h2.Driver
+    # H2 文件模式：数据保存在用户目录下，重启不丢失
+    url: jdbc:h2:file:./data/ecommerce;MODE=MySQL;DB_CLOSE_DELAY=-1;AUTO_RECONNECT=TRUE
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
 
 # JWT 配置
 jwt:
