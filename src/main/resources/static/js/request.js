@@ -129,6 +129,32 @@ const Request = (() => {
       const names = productNames[categoryId] || ['商品'];
       const nameIndex = (i - 1) % names.length;
       
+      // 生成促销信息（约60%商品有促销）
+      const hasPromotion = Math.random() < 0.6;
+      const promoTypes = ['flash', 'new', 'fullreduction', 'coupon', 'special'];
+      const promoType = promoTypes[Math.floor(Math.random() * promoTypes.length)];
+      const promoConfig = {
+        flash:        { label: '限时优惠', discount: '立减' + Math.floor(Math.random() * 200 + 50) + '元' },
+        new:          { label: '新品上市', discount: '尝鲜价' },
+        fullreduction:{ label: '满减促销', discount: '满' + (Math.floor(Math.random() * 5 + 2) * 100) + '减' + Math.floor(Math.random() * 100 + 20) },
+        coupon:       { label: '优惠券', discount: '领券减' + Math.floor(Math.random() * 50 + 10) + '元' },
+        special:      { label: '特价秒杀', discount: Math.floor(Math.random() * 40 + 10) + '% OFF' }
+      };
+
+      // 需要倒计时的促销类型
+      const needsCountdown = (promoType === 'flash' || promoType === 'special');
+      // 倒计时结束时间（1-72小时后）
+      const countdownEnd = needsCountdown
+        ? new Date(Date.now() + (Math.random() * 72 + 1) * 3600000).toISOString()
+        : null;
+
+      const promotion = hasPromotion ? {
+        type: promoType,
+        label: promoConfig[promoType].label,
+        discount: promoConfig[promoType].discount,
+        endTime: countdownEnd           // 父组件将此传给倒计时子组件
+      } : null;
+
       products.push({
         id: i,
         name: names[nameIndex] + ' ' + Math.floor(i / 8 + 1),
@@ -141,6 +167,7 @@ const Request = (() => {
         image: `https://picsum.photos/200?random=${i}`,
         description: `这是${categoryNames[categoryId - 1]}分类下的优质商品，品质保证，欢迎选购。`,
         status: Math.random() > 0.1 ? 1 : 0, // 90%上架
+        promotion: promotion,           // 促销信息（父组件传给PromotionTag和CountdownTimer子组件）
         createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
       });
     }

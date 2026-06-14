@@ -1,8 +1,7 @@
--- 测试数据
--- 测试用户 (密码: 123456, BCrypt加密)
-INSERT INTO users (username, password, phone, email, role, enabled) VALUES
-('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKFUi', '13800000000', 'admin@test.com', 'ADMIN', 1),
-('testuser', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKFUi', '13900000000', 'test@test.com', 'USER', 1);
+-- 测试用户 (密码: 123456)
+INSERT INTO users (username, password, email, phone, nickname, status) VALUES
+('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKFUi', 'admin@test.com', '13800000000', '管理员', 1),
+('testuser', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKFUi', 'test@test.com', '13900000000', '测试用户', 1);
 
 INSERT INTO orders (order_no, user_id, total_amount, status, shipping_address, receiver_name, receiver_phone, remark) VALUES
 ('ORD2024010001', 1, 299.99, 1, '北京市朝阳区建国路88号', '张三', '13800138001', '请尽快发货'),

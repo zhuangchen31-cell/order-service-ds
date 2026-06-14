@@ -415,3 +415,176 @@
   background: #409eff;
   color: #fff;
 }
+
+/* ========== 促销区域（子组件挂载点） ========== */
+.promotion-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+
+/* ========== PromotionTag 子组件样式 ========== */
+.promotion-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: promo-fade-in 0.4s ease;
+  user-select: none;
+}
+
+@keyframes promo-fade-in {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.promo-icon {
+  font-size: 14px;
+}
+
+.promo-label {
+  letter-spacing: 0.5px;
+}
+
+.promo-discount {
+  padding: 1px 6px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 3px;
+  font-size: 12px;
+  margin-left: 2px;
+}
+
+/* 按促销类型的独立样式 */
+.promo-tag-flash {
+  box-shadow: 0 2px 8px rgba(255,68,68,0.4);
+}
+
+.promo-tag-new {
+  box-shadow: 0 2px 8px rgba(64,158,255,0.4);
+}
+
+.promo-tag-full {
+  box-shadow: 0 2px 8px rgba(255,152,0,0.4);
+}
+
+.promo-tag-coupon {
+  box-shadow: 0 2px 8px rgba(103,194,58,0.4);
+}
+
+.promo-tag-special {
+  box-shadow: 0 2px 8px rgba(224,64,251,0.4);
+  animation: promo-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes promo-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* 商品卡片上的促销标签（小尺寸） */
+.product-card .promotion-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 8px;
+  font-size: 11px;
+  z-index: 2;
+}
+
+/* ========== CountdownTimer 子组件样式 ========== */
+.countdown-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  animation: promo-fade-in 0.4s ease;
+}
+
+.countdown-compact {
+  padding: 4px 10px;
+  gap: 2px;
+}
+
+.countdown-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 40px;
+}
+
+.countdown-num {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  line-height: 1.2;
+}
+
+.countdown-compact .countdown-num {
+  font-size: 16px;
+}
+
+.countdown-label {
+  font-size: 11px;
+  color: #a0a0b0;
+  margin-top: 2px;
+}
+
+.countdown-sep {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ff4444;
+  margin-top: -8px;
+}
+
+.countdown-compact .countdown-sep {
+  font-size: 14px;
+  margin-top: -4px;
+}
+
+/* 倒计时紧急状态（不足1小时） */
+.countdown-urgent .countdown-num {
+  color: #ff4444;
+  animation: cd-urgent-pulse 0.5s ease-in-out infinite;
+}
+
+@keyframes cd-urgent-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* 倒计时到期状态 */
+.countdown-expired .countdown-num {
+  color: #999;
+}
+.countdown-expired .countdown-sep {
+  color: #999;
+}
+
+/* 商品卡片上的小倒计时 */
+.product-card .countdown-timer {
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-top: 6px;
+}
+
+.product-card .countdown-num {
+  font-size: 13px;
+}
+
+.product-card .countdown-label {
+  font-size: 10px;
+}
+
+.product-card .countdown-sep {
+  font-size: 12px;
+}

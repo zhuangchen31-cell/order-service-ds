@@ -165,9 +165,19 @@ const ProductApp = (() => {
       return;
     }
 
-    container.innerHTML = products.map(p => `
+    container.innerHTML = products.map(p => {
+      // 获取促销标签图标
+      const promoIconMap = { flash: '⚡', new: '🆕', fullreduction: '🎁', coupon: '🎫', special: '🔥' };
+      const promoTag = p.promotion
+        ? `<span class="promotion-tag promo-tag-${p.promotion.type}">
+            ${promoIconMap[p.promotion.type] || '🏷️'} ${escapeHtml(p.promotion.label)}
+          </span>`
+        : '';
+
+      return `
       <div class="product-card" onclick="ProductApp.viewProduct(${p.id})">
         <div class="product-image">
+          ${promoTag}
           <img src="${p.image || 'https://picsum.photos/200'}" alt="${escapeHtml(p.name)}" loading="lazy">
           ${p.status === 0 ? '<span class="sold-out">已售罄</span>' : ''}
         </div>
@@ -184,7 +194,7 @@ const ProductApp = (() => {
           </div>
         </div>
       </div>
-    `).join('');
+    `}).join('');
   }
 
   /**
@@ -302,14 +312,26 @@ const ProductApp = (() => {
     }
   }
 
+  // 当前活跃的子组件实例（用于关闭弹窗时清理）
+  let activePromoTag = null;
+  let activeCountdown = null;
+
   /**
-   * 显示商品详情弹窗
+   * 显示商品详情弹窗（父组件）
+   *
+   * 父→子传值流程：
+   *   1. 从product.promotion提取促销数据
+   *   2. 创建PromotionTag子组件实例，传入 {type, label, discount}
+   *   3. 若有endTime，创建CountdownTimer子组件实例，传入 {endTime, onExpire}
+   *   4. 子组件.render(container) 渲染到父组件提供的DOM容器中
+   *
    * @param {Object} product - 商品数据
    */
   function showProductDetail(product) {
     const modal = $('#modal-product');
     if (!modal) return;
 
+    // 构建详情HTML（包含子组件占位容器）
     modal.querySelector('.modal-body').innerHTML = `
       <div class="product-detail">
         <div class="detail-image">
@@ -318,9 +340,16 @@ const ProductApp = (() => {
         <div class="detail-info">
           <h3>${escapeHtml(product.name)}</h3>
           <div class="detail-category">分类: ${escapeHtml(product.categoryName || '未分类')}</div>
+
+          <!-- 促销信息区域 — 子组件PromotionTag和CountdownTimer挂载点 -->
+          <div class="promotion-area" id="promo-area">
+            <div id="promo-tag-container"></div>
+            <div id="promo-countdown-container"></div>
+          </div>
+
           <div class="detail-price">
             <span class="current-price">${formatMoney(product.price)}</span>
-            ${product.originalPrice > product.price ? 
+            ${product.originalPrice > product.price ?
               `<span class="original-price">${formatMoney(product.originalPrice)}</span>
                <span class="discount">优惠 ${Math.round((1 - product.price / product.originalPrice) * 100)}%</span>` : ''}
           </div>
@@ -342,13 +371,71 @@ const ProductApp = (() => {
       </div>
     `;
 
+    // ========== 父组件向子组件传值 ==========
+    const promotion = product.promotion;
+
+    if (promotion) {
+      // 1. 创建PromotionTag子组件，父传子：{ type, label, discount }
+      const tagContainer = modal.querySelector('#promo-tag-container');
+      if (tagContainer) {
+        activePromoTag = PromotionTag.create({
+          type: promotion.type,         // ← 父传子：促销类型
+          label: promotion.label,       // ← 父传子：标签文字
+          discount: promotion.discount  // ← 父传子：折扣信息
+        });
+        activePromoTag.render(tagContainer);
+        console.log('✅ [父→子] PromotionTag子组件已渲染，传入props:', promotion);
+      }
+
+      // 2. 若有倒计时结束时间，创建CountdownTimer子组件
+      if (promotion.endTime) {
+        const countdownContainer = modal.querySelector('#promo-countdown-container');
+        if (countdownContainer) {
+          activeCountdown = CountdownTimer.create({
+            endTime: promotion.endTime,  // ← 父传子：结束时间
+            showLabels: true,
+            compact: false,
+            onExpire: () => {
+              // 倒计时到期回调
+              console.log('⏰ 促销倒计时已到期');
+              if (activePromoTag) {
+                activePromoTag.update({ type: 'new', label: '促销已结束', discount: '' });
+              }
+            },
+            onTick: (remaining) => {
+              // 每秒回调（可用于外部状态同步）
+              if (remaining.total <= 3600) {
+                // 不足1小时时，倒计时数字变红
+                const el = activeCountdown ? activeCountdown.getElement() : null;
+                if (el && !el.classList.contains('countdown-urgent')) {
+                  el.classList.add('countdown-urgent');
+                }
+              }
+            }
+          });
+          activeCountdown.render(countdownContainer);
+          console.log('✅ [父→子] CountdownTimer子组件已渲染，结束时间:', promotion.endTime);
+        }
+      }
+    }
+
     modal.classList.remove('hidden');
   }
 
   /**
-   * 关闭弹窗
+   * 关闭弹窗（清理子组件）
    */
   function closeModal() {
+    // 销毁子组件实例，清除定时器
+    if (activeCountdown) {
+      activeCountdown.destroy();
+      activeCountdown = null;
+    }
+    if (activePromoTag) {
+      activePromoTag.destroy();
+      activePromoTag = null;
+    }
+
     const modal = $('#modal-product');
     if (modal) modal.classList.add('hidden');
   }

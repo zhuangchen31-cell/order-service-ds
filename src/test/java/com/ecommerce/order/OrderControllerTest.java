@@ -1,6 +1,5 @@
 package com.ecommerce.order;
 
-import com.ecommerce.order.common.Result;
 import com.ecommerce.order.controller.OrderController;
 import com.ecommerce.order.controller.OrderItemController;
 import com.ecommerce.order.dto.ApiResponse;
@@ -136,9 +135,10 @@ public class OrderControllerTest {
 
         when(orderItemService.save(any(OrderItem.class))).thenReturn(true);
 
-        Result result = orderItemController.createOrderItem(item);
-        assertNotNull(result);
-        assertTrue((Boolean) result.get("success"));
+        ResponseEntity<ApiResponse<OrderItem>> response = orderItemController.createOrderItem(item);
+        assertNotNull(response);
+        assertTrue(response.getBody().getSuccess());
+        assertEquals("订单明细创建成功", response.getBody().getMessage());
     }
 
     @Test
@@ -150,17 +150,19 @@ public class OrderControllerTest {
 
         when(orderItemService.getById(1L)).thenReturn(item);
 
-        Result result = orderItemController.getOrderItemById(1L);
-        assertNotNull(result);
-        assertTrue((Boolean) result.get("success"));
+        ResponseEntity<ApiResponse<OrderItem>> response = orderItemController.getOrderItemById(1L);
+        assertNotNull(response);
+        assertTrue(response.getBody().getSuccess());
+        assertNotNull(response.getBody().getData());
     }
 
     @Test
     public void testGetOrderItemByIdNotFound() {
         when(orderItemService.getById(999L)).thenReturn(null);
 
-        Result result = orderItemController.getOrderItemById(999L);
-        assertNotNull(result);
-        assertFalse((Boolean) result.get("success"));
+        ResponseEntity<ApiResponse<OrderItem>> response = orderItemController.getOrderItemById(999L);
+        assertNotNull(response);
+        assertFalse(response.getBody().getSuccess());
+        assertEquals("订单明细不存在", response.getBody().getMessage());
     }
 }
