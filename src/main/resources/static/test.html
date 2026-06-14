@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>异步请求测试 - 电商购物平台</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .test-container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    .test-section {
+      background: #fff;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .test-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #303133;
+    }
+    .test-result {
+      background: #f5f7fa;
+      border-radius: 4px;
+      padding: 12px;
+      margin-top: 12px;
+      font-family: monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .test-success { color: #67c23a; }
+    .test-error { color: #f56c6c; }
+    .test-info { color: #409eff; }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px dashed #e0e0e0;
+    }
+    .log-time {
+      color: #909399;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="logo">🧪 异步请求功能测试</div>
+    <div class="nav-links">
+      <a href="/" class="nav-link">订单管理</a>
+      <a href="/product.html" class="nav-link">商品列表</a>
+      <a href="/test.html" class="nav-link active">接口测试</a>
+    </div>
+  </header>
+
+  <div class="test-container">
+
+    <!-- 测试说明 -->
+    <div class="test-section">
+      <div class="test-title">📋 测试说明</div>
+      <p>本页面用于测试异步请求工具的功能，包括：</p>
+      <ul>
+        <li>Request.js 请求封装功能</li>
+        <li>商品API接口调用</li>
+        <li>分页查询功能</li>
+        <li>分类筛选功能</li>
+        <li>Mock数据模式</li>
+      </ul>
+      <p><strong>当前模式：</strong><span id="current-mode">Mock数据模式</span></p>
+    </div>
+
+    <!-- Token管理测试 -->
+    <div class="test-section">
+      <div class="test-title">🔐 Token管理测试</div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="testSetToken()">设置Token</button>
+        <button class="btn btn-default" onclick="testGetToken()">获取Token</button>
+        <button class="btn btn-warning" onclick="testClearToken()">清除Token</button>
+        <button class="btn btn-info" onclick="testIsLoggedIn()">检查登录状态</button>
+      </div>
+      <div class="test-result" id="token-result">等待测试...</div>
+    </div>
+
+    <!-- 分类接口测试 -->
+    <div class="test-section">
+      <div class="test-title">📁 商品分类接口测试</div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="testGetCategories()">获取分类列表</button>
+      </div>
+      <div class="test-result" id="category-result">等待测试...</div>
+    </div>
+
+    <!-- 商品列表分页测试 -->
+    <div class="test-section">
+      <div class="test-title">📦 商品列表分页测试</div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="testGetProducts(1)">第1页</button>
+        <button class="btn btn-default" onclick="testGetProducts(2)">第2页</button>
+        <button class="btn btn-default" onclick="testGetProducts(3)">第3页</button>
+        <button class="btn btn-default" onclick="testGetProducts(5)">第5页</button>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-success" onclick="testGetProductsByCategory(1)">电子产品</button>
+        <button class="btn btn-success" onclick="testGetProductsByCategory(2)">服装鞋帽</button>
+        <button class="btn btn-success" onclick="testGetProductsByCategory(3)">家居用品</button>
+      </div>
+      <div class="test-result" id="product-result">等待测试...</div>
+    </div>
+
+    <!-- 商品详情测试 -->
+    <div class="test-section">
+      <div class="test-title">🔍 商品详情测试</div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="testGetProductById(1)">商品ID=1</button>
+        <button class="btn btn-default" onclick="testGetProductById(50)">商品ID=50</button>
+        <button class="btn btn-default" onclick="testGetProductById(100)">商品ID=100</button>
+      </div>
+      <div class="test-result" id="detail-result">等待测试...</div>
+    </div>
+
+    <!-- 搜索功能测试 -->
+    <div class="test-section">
+      <div class="test-title">🔎 搜索功能测试</div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="testSearchProducts('iPhone')">搜索iPhone</button>
+        <button class="btn btn-default" onclick="testSearchProducts('牛仔裤')">搜索牛仔裤</button>
+        <button class="btn btn-default" onclick="testSearchProducts('咖啡')">搜索咖啡</button>
+      </div>
+      <div class="test-result" id="search-result">等待测试...</div>
+    </div>
+
+    <!-- Mock模式切换 -->
+    <div class="test-section">
+      <div class="test-title">⚙️ Mock/API模式切换</div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="toggleMockMode()">切换模式</button>
+        <button class="btn btn-default" onclick="showCurrentConfig()">显示配置</button>
+      </div>
+      <div class="test-result" id="config-result">等待测试...</div>
+    </div>
+
+    <!-- 请求日志 -->
+    <div class="test-section">
+      <div class="test-title">📝 请求日志（实时记录每次请求）</div>
+      <div class="btn-group">
+        <button class="btn btn-warning" onclick="clearLogs()">清除日志</button>
+      </div>
+      <div class="test-result" id="log-result" style="max-height: 400px;">
+        <div class="log-entry"><span class="log-time">[系统]</span> 测试页面已加载，等待测试操作...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/js/request.js"></script>
+  <script src="/js/product.js"></script>
+  <script>
+
+    // 日志记录函数
+    function addLog(message, type = 'info') {
+      const logContainer = document.getElementById('log-result');
+      const time = new Date().toLocaleTimeString();
+      const colorClass = type === 'success' ? 'test-success' : 
+                         type === 'error' ? 'test-error' : 'test-info';
+      logContainer.innerHTML += `<div class="log-entry"><span class="log-time">[${time}]</span> <span class="${colorClass}">${message}</span></div>`;
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    function clearLogs() {
+      document.getElementById('log-result').innerHTML = '<div class="log-entry"><span class="log-time">[系统]</span> 日志已清除</div>';
+    }
+
+    // ========== Token测试 ==========
+    function testSetToken() {
+      const testToken = 'test_jwt_token_' + Date.now();
+      Request.setToken(testToken);
+      document.getElementById('token-result').textContent = `✅ Token已设置: ${testToken}`;
+      addLog('设置Token成功', 'success');
+    }
+
+    function testGetToken() {
+      const token = Request.getToken();
+      document.getElementById('token-result').textContent = token ? 
+        `✅ 当前Token: ${token}` : '❌ 未找到Token';
+      addLog('获取Token: ' + (token || '无'), token ? 'success' : 'error');
+    }
+
+    function testClearToken() {
+      Request.clearToken();
+      document.getElementById('token-result').textContent = '✅ Token已清除';
+      addLog('清除Token成功', 'success');
+    }
+
+    function testIsLoggedIn() {
+      const loggedIn = Request.isLoggedIn();
+      document.getElementById('token-result').textContent = loggedIn ? 
+        '✅ 已登录' : '❌ 未登录';
+      addLog('检查登录状态: ' + (loggedIn ? '已登录' : '未登录'), loggedIn ? 'success' : 'error');
+    }
+
+    // ========== 分类接口测试 ==========
+    async function testGetCategories() {
+      addLog('发送请求: GET /api/categories');
+      try {
+        const res = await ProductAPI.getCategories();
+        const result = JSON.stringify(res, null, 2);
+        document.getElementById('category-result').textContent = `✅ 分类列表:\n${result}`;
+        addLog(`获取分类成功，共 ${res.data?.length || 0} 个分类`, 'success');
+      } catch (err) {
+        document.getElementById('category-result').textContent = `❌ 错误: ${err.message}`;
+        addLog('获取分类失败: ' + err.message, 'error');
+      }
+    }
+
+    // ========== 商品列表测试 ==========
+    async function testGetProducts(page) {
+      addLog(`发送请求: GET /api/products?pageNum=${page}&pageSize=10`);
+      try {
+        const res = await ProductAPI.getProducts({ pageNum: page, pageSize: 10 });
+        const result = JSON.stringify(res, null, 2);
+        document.getElementById('product-result').textContent = `✅ 第${page}页商品:\n${result}`;
+        addLog(`获取第${page}页商品成功，共 ${res.data?.list?.length || 0} 条，总数 ${res.data?.total || 0}`, 'success');
+      } catch (err) {
+        document.getElementById('product-result').textContent = `❌ 错误: ${err.message}`;
+        addLog('获取商品列表失败: ' + err.message, 'error');
+      }
+    }
+
+    async function testGetProductsByCategory(categoryId) {
+      addLog(`发送请求: GET /api/products?categoryId=${categoryId}&pageNum=1&pageSize=10`);
+      try {
+        const res = await ProductAPI.getProductsByCategory(categoryId, 1, 10);
+        const result = JSON.stringify(res, null, 2);
+        document.getElementById('product-result').textContent = `✅ 分类${categoryId}商品:\n${result}`;
+        addLog(`获取分类${categoryId}商品成功，共 ${res.data?.list?.length || 0} 条`, 'success');
+      } catch (err) {
+        document.getElementById('product-result').textContent = `❌ 错误: ${err.message}`;
+        addLog('获取分类商品失败: ' + err.message, 'error');
+      }
+    }
+
+    // ========== 商品详情测试 ==========
+    async function testGetProductById(id) {
+      addLog(`发送请求: GET /api/products/${id}`);
+      try {
+        const res = await ProductAPI.getProductById(id);
+        const result = JSON.stringify(res, null, 2);
+        document.getElementById('detail-result').textContent = `✅ 商品详情:\n${result}`;
+        addLog(`获取商品ID=${id}详情成功: ${res.data?.name || '未找到'}`, 'success');
+      } catch (err) {
+        document.getElementById('detail-result').textContent = `❌ 错误: ${err.message}`;
+        addLog('获取商品详情失败: ' + err.message, 'error');
+      }
+    }
+
+    // ========== 搜索测试 ==========
+    async function testSearchProducts(keyword) {
+      addLog(`发送请求: GET /api/products?keyword=${keyword}&pageNum=1&pageSize=10`);
+      try {
+        const res = await ProductAPI.searchProducts(keyword, 1, 10);
+        const result = JSON.stringify(res, null, 2);
+        document.getElementById('search-result').textContent = `✅ 搜索"${keyword}"结果:\n${result}`;
+        addLog(`搜索"${keyword}"成功，找到 ${res.data?.list?.length || 0} 条结果`, 'success');
+      } catch (err) {
+        document.getElementById('search-result').textContent = `❌ 错误: ${err.message}`;
+        addLog('搜索失败: ' + err.message, 'error');
+      }
+    }
+
+    // ========== Mock模式切换 ==========
+    function toggleMockMode() {
+      const currentMode = Request.getConfig().useMock;
+      Request.setMockMode(!currentMode);
+      const newMode = Request.getConfig().useMock ? 'Mock数据模式' : '真实API模式';
+      document.getElementById('current-mode').textContent = newMode;
+      document.getElementById('config-result').textContent = `✅ 已切换为: ${newMode}`;
+      addLog('切换请求模式: ' + newMode, 'success');
+    }
+
+    function showCurrentConfig() {
+      const config = Request.getConfig();
+      const result = JSON.stringify({
+        baseURL: config.baseURL,
+        timeout: config.timeout,
+        retryCount: config.retryCount,
+        useMock: config.useMock
+      }, null, 2);
+      document.getElementById('config-result').textContent = `当前配置:\n${result}`;
+      addLog('显示当前配置', 'info');
+    }
+
+    // 初始化
+    Request.setMockMode(true);
+    addLog('初始化完成，默认使用Mock数据模式');
+
+  </script>
+</body>
+</html>

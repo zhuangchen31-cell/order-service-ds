@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商品列表 - 电商购物平台</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/product.css">
+</head>
+<body>
+
+  <!-- 顶部导航 -->
+  <header class="header">
+    <div class="logo">🛒 电商购物平台 - 商品中心</div>
+    <div class="nav-links">
+      <a href="/" class="nav-link">订单管理</a>
+      <a href="/product.html" class="nav-link active">商品列表</a>
+    </div>
+    <div class="user-info">
+      <button class="btn btn-default" id="btn-toggle-mock">切换为真实API</button>
+    </div>
+  </header>
+
+  <div class="container" id="product-page">
+
+    <!-- 搜索栏 -->
+    <div class="search-bar">
+      <div class="search-input">
+        <input type="text" id="search-keyword" placeholder="搜索商品名称...">
+        <button class="btn btn-primary" id="btn-search">🔍 搜索</button>
+        <button class="btn btn-default" id="btn-clear-search">清除</button>
+      </div>
+      <div class="search-stats" id="product-stats">
+        <span class="stat-item">当前分类: 全部</span>
+        <span class="stat-item">搜索词: 无</span>
+        <span class="stat-item">商品总数: 0</span>
+      </div>
+    </div>
+
+    <!-- 分类筛选 -->
+    <div class="category-section">
+      <div class="category-label">商品分类：</div>
+      <div class="category-tabs" id="category-tabs">
+        <button class="category-tab active">全部商品</button>
+        <!-- 分类标签动态加载 -->
+      </div>
+    </div>
+
+    <!-- 商品列表 -->
+    <div class="product-section">
+      <div class="product-list" id="product-list">
+        <div class="loading">正在加载商品数据...</div>
+      </div>
+    </div>
+
+    <!-- 分页组件 -->
+    <div class="pagination-section">
+      <div class="pagination-info" id="pagination-info">共 0 件商品，第 1/1 页</div>
+      <div class="pagination-pages" id="pagination-pages">
+        <!-- 分页按钮动态渲染 -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 商品详情弹窗 -->
+  <div id="modal-product" class="modal-overlay hidden">
+    <div class="modal modal-large">
+      <div class="modal-header">
+        <h3>📦 商品详情</h3>
+        <button class="modal-close" onclick="ProductApp.closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- 商品详情动态渲染 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 引入JS文件 -->
+  <script src="/js/request.js"></script>
+  <script src="/js/product.js"></script>
+  <script src="/js/productApp.js"></script>
+
+</body>
+</html>

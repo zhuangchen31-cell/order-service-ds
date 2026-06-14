@@ -1,15 +1,14 @@
 server:
-  port: 8088
+  port: 8081
 
 spring:
   application:
     name: order-service
   datasource:
     driver-class-name: org.h2.Driver
-    # H2 文件模式：数据保存在用户目录下，重启不丢失
-    url: jdbc:h2:file:./data/ecommerce;MODE=MySQL;DB_CLOSE_DELAY=-1;AUTO_RECONNECT=TRUE
+    url: jdbc:h2:mem:testdb
     username: sa
-    password:
+    password: 
   h2:
     console:
       enabled: true
@@ -19,11 +18,6 @@ spring:
       mode: always
       schema-locations: classpath:schema.sql
       data-locations: classpath:data.sql
-
-# JWT 配置
-jwt:
-  secret: YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkwYWJjZA==
-  expiration: 86400000
 
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
@@ -37,6 +31,6 @@ mybatis-plus:
       logic-delete-value: 1
       logic-not-delete-value: 0
 
-logging:
-  level:
-    com.ecommerce.order: DEBUG
+jwt:
+  secret: EcommerceSecretKeyForJWT2024!@#$%^&*
+  expiration: 86400000

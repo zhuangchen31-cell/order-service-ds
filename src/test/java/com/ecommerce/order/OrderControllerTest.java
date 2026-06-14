@@ -3,6 +3,7 @@ package com.ecommerce.order;
 import com.ecommerce.order.common.Result;
 import com.ecommerce.order.controller.OrderController;
 import com.ecommerce.order.controller.OrderItemController;
+import com.ecommerce.order.dto.ApiResponse;
 import com.ecommerce.order.entity.Order;
 import com.ecommerce.order.entity.OrderItem;
 import com.ecommerce.order.service.OrderItemService;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
 
@@ -50,10 +52,10 @@ public class OrderControllerTest {
 
         when(orderService.save(any(Order.class))).thenReturn(true);
 
-        Result result = orderController.createOrder(order);
-        assertNotNull(result);
-        assertTrue((Boolean) result.get("success"));
-        assertEquals("订单创建成功", result.get("message"));
+        ResponseEntity<ApiResponse<Order>> response = orderController.createOrder(order);
+        assertNotNull(response);
+        assertTrue(response.getBody().getSuccess());
+        assertEquals("订单创建成功", response.getBody().getMessage());
     }
 
     @Test
@@ -65,20 +67,20 @@ public class OrderControllerTest {
 
         when(orderService.getById(1L)).thenReturn(order);
 
-        Result result = orderController.getOrderById(1L);
-        assertNotNull(result);
-        assertTrue((Boolean) result.get("success"));
-        assertNotNull(result.get("data"));
+        ResponseEntity<ApiResponse<Order>> response = orderController.getOrderById(1L);
+        assertNotNull(response);
+        assertTrue(response.getBody().getSuccess());
+        assertNotNull(response.getBody().getData());
     }
 
     @Test
     public void testGetOrderByIdNotFound() {
         when(orderService.getById(999L)).thenReturn(null);
 
-        Result result = orderController.getOrderById(999L);
-        assertNotNull(result);
-        assertFalse((Boolean) result.get("success"));
-        assertEquals("订单不存在", result.get("message"));
+        ResponseEntity<ApiResponse<Order>> response = orderController.getOrderById(999L);
+        assertNotNull(response);
+        assertFalse(response.getBody().getSuccess());
+        assertEquals("订单不存在", response.getBody().getMessage());
     }
 
     @Test
@@ -89,20 +91,20 @@ public class OrderControllerTest {
 
         when(orderService.updateById(any(Order.class))).thenReturn(true);
 
-        Result result = orderController.updateOrder(1L, order);
-        assertNotNull(result);
-        assertTrue((Boolean) result.get("success"));
-        assertEquals("订单更新成功", result.get("message"));
+        ResponseEntity<ApiResponse<Order>> response = orderController.updateOrder(1L, order);
+        assertNotNull(response);
+        assertTrue(response.getBody().getSuccess());
+        assertEquals("订单更新成功", response.getBody().getMessage());
     }
 
     @Test
     public void testDeleteOrder() {
         when(orderService.removeById(1L)).thenReturn(true);
 
-        Result result = orderController.deleteOrder(1L);
-        assertNotNull(result);
-        assertTrue((Boolean) result.get("success"));
-        assertEquals("订单删除成功", result.get("message"));
+        ResponseEntity<ApiResponse<Void>> response = orderController.deleteOrder(1L);
+        assertNotNull(response);
+        assertTrue(response.getBody().getSuccess());
+        assertEquals("订单删除成功", response.getBody().getMessage());
     }
 
     @Test
@@ -114,9 +116,9 @@ public class OrderControllerTest {
 
         when(orderService.getOne(any())).thenReturn(order);
 
-        Result result = orderController.getOrderByOrderNo("ORD2024010001");
-        assertNotNull(result);
-        assertTrue((Boolean) result.get("success"));
+        ResponseEntity<ApiResponse<Order>> response = orderController.getOrderByOrderNo("ORD2024010001");
+        assertNotNull(response);
+        assertTrue(response.getBody().getSuccess());
     }
 
     // ============ OrderItem 订单明细测试 ============
