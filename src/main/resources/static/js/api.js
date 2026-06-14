@@ -79,7 +79,7 @@ const API = (() => {
   }
 
   async function getCurrentUser() {
-    return request('/api/auth/me');
+    return request('/api/auth/info');
   }
 
   // ========== 订单 API ==========

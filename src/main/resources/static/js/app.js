@@ -61,7 +61,7 @@ const App = (() => {
     }
     try {
       const res = await API.login(username, password);
-      API.setToken(res.data.tokenInfo.token);
+      API.setToken(res.data.token);
       API.setUser(res.data.user);
       showToast('登录成功');
       showMainApp();
@@ -85,10 +85,11 @@ const App = (() => {
       return;
     }
     try {
-      const res = await API.register(username, password, phone, email);
-      API.setToken(res.data.tokenInfo.token);
-      API.setUser(res.data.user);
-      showToast('注册成功');
+      await API.register(username, password, phone, email);
+      showToast('注册成功，正在登录...');
+      const loginRes = await API.login(username, password);
+      API.setToken(loginRes.data.token);
+      API.setUser(loginRes.data.user);
       showMainApp();
     } catch (err) {
       showToast(err.message, 'error');
@@ -145,9 +146,10 @@ const App = (() => {
 
     try {
       const res = await API.getOrders(params);
-      totalPages = res.pages || 1;
-      renderOrderTable(res.data || []);
-      renderPagination(res.total || 0);
+      const pageData = res.data || {};
+      totalPages = pageData.pages || 1;
+      renderOrderTable(pageData.list || []);
+      renderPagination(pageData.total || 0);
     } catch (err) {
       showToast('加载订单失败: ' + err.message, 'error');
     }

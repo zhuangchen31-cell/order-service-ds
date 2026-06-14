@@ -132,10 +132,10 @@ const ProductApp = (() => {
       const res = await ProductAPI.getProducts(params);
 
       if (res.success) {
-        const data = res.data;
-        totalPages = data.pages || 1;
-        totalProducts = data.total || 0;
-        renderProductList(data.list || []);
+        const data = res.data || {};
+        totalPages = res.pages || data.pages || 1;
+        totalProducts = res.total || data.total || 0;
+        renderProductList(data.records || data.list || []);
         renderPagination();
         updateStats();
       } else {
@@ -536,8 +536,8 @@ const ProductApp = (() => {
    * 初始化应用
    */
   function init() {
-    // 默认使用Mock数据（因为后端商品API可能未实现）
-    Request.setMockMode(true);
+    // 使用真实API模式
+    Request.setMockMode(false);
 
     // 加载分类和商品
     loadCategories();

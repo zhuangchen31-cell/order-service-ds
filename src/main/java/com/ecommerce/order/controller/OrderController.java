@@ -10,7 +10,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -99,5 +103,41 @@ public class OrderController {
             return ResponseEntity.ok(ApiResponse.success(order));
         }
         return ResponseEntity.ok(ApiResponse.error("订单不存在"));
+    }
+
+    @GetMapping("/stats/overview")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getOrderStats() {
+        Map<String, Object> stats = new HashMap<>();
+
+        LambdaQueryWrapper<Order> base = new LambdaQueryWrapper<>();
+        base.eq(Order::getDeleted, 0);
+        stats.put("totalOrders", orderService.count(base));
+
+        for (int status = 0; status <= 4; status++) {
+            LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(Order::getDeleted, 0);
+            wrapper.eq(Order::getStatus, status);
+            stats.put("status_" + status, orderService.count(wrapper));
+        }
+
+        LocalDateTime startOfDay = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
+        LambdaQueryWrapper<Order> todayWrapper = new LambdaQueryWrapper<>();
+        todayWrapper.eq(Order::getDeleted, 0);
+        todayWrapper.ge(Order::getCreatedAt, startOfDay);
+        stats.put("todayOrders", orderService.count(todayWrapper));
+
+        return ResponseEntity.ok(ApiResponse.success(stats));
+    }
+
+    @DeleteMapping("/batch")
+    public ResponseEntity<ApiResponse<Void>> batchDeleteOrders(@RequestBody List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return ResponseEntity.ok(ApiResponse.error("请选择要删除的订单"));
+        }
+        boolean success = orderService.removeByIds(ids);
+        if (success) {
+            return ResponseEntity.ok(ApiResponse.success("批量删除成功", null));
+        }
+        return ResponseEntity.ok(ApiResponse.error("批量删除失败"));
     }
 }

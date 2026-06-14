@@ -1,12 +1,11 @@
 -- 初始化管理员账号 (密码: 123456)
+DELETE FROM users WHERE username IN ('admin', 'test');
 INSERT INTO users (username, password, email, phone, nickname, status)
-SELECT 'admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKFUi', 'admin@ecommerce.com', '13800000001', '管理员', 1
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');
+VALUES ('admin', '$2a$10$iNccMlsyet6VR1PSQv/bv.ld8oTcvGiz9IvqDBSlh85/dSj59J7NK', 'admin@ecommerce.com', '13800000001', '管理员', 1);
 
 -- 初始化测试用户 (密码: 123456)
 INSERT INTO users (username, password, email, phone, nickname, status)
-SELECT 'test', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKFUi', 'test@ecommerce.com', '13800000002', '测试用户', 1
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'test');
+VALUES ('test', '$2a$10$iNccMlsyet6VR1PSQv/bv.ld8oTcvGiz9IvqDBSlh85/dSj59J7NK', 'test@ecommerce.com', '13800000002', '测试用户', 1);
 
 -- 初始化示例订单
 INSERT INTO orders (order_no, user_id, total_amount, status, shipping_address, receiver_name, receiver_phone, remark)
@@ -22,48 +21,49 @@ SELECT 'ORD2024010003', 1, 899.00, 2, '上海市浦东新区世纪大道100号',
 WHERE NOT EXISTS (SELECT 1 FROM orders WHERE order_no = 'ORD2024010003');
 
 -- 初始化商品数据（供商品CRUD接口测试）
+-- 商品图片使用 picsum.photos 的固定种子，确保图片与商品匹配
 INSERT INTO product (name, category_id, category_name, price, original_price, stock, sales, image, description, status)
-SELECT 'iPhone 15 Pro', 1, '电子产品', 7999.00, 8999.00, 100, 520, 'https://picsum.photos/200?random=1', 'Apple旗舰手机，A17 Pro芯片', 1
+SELECT 'iPhone 15 Pro', 1, '电子产品', 7999.00, 8999.00, 100, 520, 'https://picsum.photos/seed/iphone15/200/200', 'Apple旗舰手机，A17 Pro芯片', 1
 WHERE NOT EXISTS (SELECT 1 FROM product WHERE name = 'iPhone 15 Pro');
 
 INSERT INTO product (name, category_id, category_name, price, original_price, stock, sales, image, description, status)
-SELECT 'MacBook Air M3', 1, '电子产品', 8999.00, 9499.00, 50, 230, 'https://picsum.photos/200?random=2', '轻薄笔记本，M3芯片', 1
+SELECT 'MacBook Air M3', 1, '电子产品', 8999.00, 9499.00, 50, 230, 'https://picsum.photos/seed/macbook/200/200', '轻薄笔记本，M3芯片', 1
 WHERE NOT EXISTS (SELECT 1 FROM product WHERE name = 'MacBook Air M3');
 
 INSERT INTO product (name, category_id, category_name, price, original_price, stock, sales, image, description, status)
-SELECT '华为Mate 60 Pro', 1, '电子产品', 6999.00, 6999.00, 80, 890, 'https://picsum.photos/200?random=3', '华为旗舰手机，卫星通话', 1
+SELECT '华为Mate 60 Pro', 1, '电子产品', 6999.00, 6999.00, 80, 890, 'https://picsum.photos/seed/huawei/200/200', '华为旗舰手机，卫星通话', 1
 WHERE NOT EXISTS (SELECT 1 FROM product WHERE name = '华为Mate 60 Pro');
 
 INSERT INTO product (name, category_id, category_name, price, original_price, stock, sales, image, description, status)
-SELECT '蓝牙降噪耳机', 1, '电子产品', 599.00, 799.00, 200, 1200, 'https://picsum.photos/200?random=4', '主动降噪，40小时续航', 1
+SELECT '蓝牙降噪耳机', 1, '电子产品', 599.00, 799.00, 200, 1200, 'https://picsum.photos/seed/headphones/200/200', '主动降噪，40小时续航', 1
 WHERE NOT EXISTS (SELECT 1 FROM product WHERE name = '蓝牙降噪耳机');
 
 INSERT INTO product (name, category_id, category_name, price, original_price, stock, sales, image, description, status)
-SELECT '男士运动T恤', 2, '服装鞋帽', 129.00, 199.00, 300, 560, 'https://picsum.photos/200?random=5', '纯棉透气，亲肤舒适', 1
+SELECT '男士运动T恤', 2, '服装鞋帽', 129.00, 199.00, 300, 560, 'https://picsum.photos/seed/tshirt/200/200', '纯棉透气，亲肤舒适', 1
 WHERE NOT EXISTS (SELECT 1 FROM product WHERE name = '男士运动T恤');
 
 INSERT INTO product (name, category_id, category_name, price, original_price, stock, sales, image, description, status)
-SELECT '女士羽绒服', 2, '服装鞋帽', 899.00, 1599.00, 60, 180, 'https://picsum.photos/200?random=6', '90%白鹅绒，保暖轻盈', 1
+SELECT '女士羽绒服', 2, '服装鞋帽', 899.00, 1599.00, 60, 180, 'https://picsum.photos/seed/jacket/200/200', '90%白鹅绒，保暖轻盈', 1
 WHERE NOT EXISTS (SELECT 1 FROM product WHERE name = '女士羽绒服');
 
 INSERT INTO product (name, category_id, category_name, price, original_price, stock, sales, image, description, status)
-SELECT '实木餐桌', 3, '家居用品', 2599.00, 3599.00, 15, 42, 'https://picsum.photos/200?random=7', '北美白橡木，环保漆面', 1
+SELECT '实木餐桌', 3, '家居用品', 2599.00, 3599.00, 15, 42, 'https://picsum.photos/seed/table/200/200', '北美白橡木，环保漆面', 1
 WHERE NOT EXISTS (SELECT 1 FROM product WHERE name = '实木餐桌');
 
 INSERT INTO product (name, category_id, category_name, price, original_price, stock, sales, image, description, status)
-SELECT '有机绿茶礼盒', 4, '食品饮料', 288.00, 368.00, 150, 670, 'https://picsum.photos/200?random=8', '明前采摘，清香回甘', 1
+SELECT '有机绿茶礼盒', 4, '食品饮料', 288.00, 368.00, 150, 670, 'https://picsum.photos/seed/tea/200/200', '明前采摘，清香回甘', 1
 WHERE NOT EXISTS (SELECT 1 FROM product WHERE name = '有机绿茶礼盒');
 
 INSERT INTO product (name, category_id, category_name, price, original_price, stock, sales, image, description, status)
-SELECT 'Python编程入门', 5, '图书文具', 59.00, 79.00, 500, 2300, 'https://picsum.photos/200?random=9', '零基础学Python，畅销教程', 1
+SELECT 'Python编程入门', 5, '图书文具', 59.00, 79.00, 500, 2300, 'https://picsum.photos/seed/book/200/200', '零基础学Python，畅销教程', 1
 WHERE NOT EXISTS (SELECT 1 FROM product WHERE name = 'Python编程入门');
 
 INSERT INTO product (name, category_id, category_name, price, original_price, stock, sales, image, description, status)
-SELECT '专业篮球', 6, '运动户外', 299.00, 399.00, 120, 340, 'https://picsum.photos/200?random=10', '室内外通用，防滑耐磨', 1
+SELECT '专业篮球', 6, '运动户外', 299.00, 399.00, 120, 340, 'https://picsum.photos/seed/basketball/200/200', '室内外通用，防滑耐磨', 1
 WHERE NOT EXISTS (SELECT 1 FROM product WHERE name = '专业篮球');
 
 INSERT INTO product (name, category_id, category_name, price, original_price, stock, sales, image, description, status)
-SELECT '已下架测试商品', 1, '电子产品', 99.00, 199.00, 0, 0, 'https://picsum.photos/200?random=99', '此商品已下架，用于测试', 0
+SELECT '已下架测试商品', 1, '电子产品', 99.00, 199.00, 0, 0, 'https://picsum.photos/seed/offline/200/200', '此商品已下架，用于测试', 0
 WHERE NOT EXISTS (SELECT 1 FROM product WHERE name = '已下架测试商品');
 
 -- 初始化示例订单明细
