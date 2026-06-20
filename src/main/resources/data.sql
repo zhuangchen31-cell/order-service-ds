@@ -1,6 +1,4 @@
--- ============================================
 -- 用户数据（密码统一为 123456，BCrypt 加密）
--- ============================================
 INSERT INTO users (username, password, phone, email, role, enabled)
 SELECT 'admin', '$2a$10$wgm8OHk2f6p1WqIufre9wOqajc559f/zg0.iQ06e9vGZlNI9RgArm', '13800000001', 'admin@ecommerce.com', 'ADMIN', 1
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');
@@ -9,11 +7,7 @@ INSERT INTO users (username, password, phone, email, role, enabled)
 SELECT 'test', '$2a$10$wgm8OHk2f6p1WqIufre9wOqajc559f/zg0.iQ06e9vGZlNI9RgArm', '13800000002', 'test@ecommerce.com', 'USER', 1
 WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'test');
 
--- ============================================
 -- 商品数据（12 款，图片与名称精准匹配）
--- 图片来自 Unsplash，永久有效
--- ============================================
-
 -- 1. 无线蓝牙耳机
 INSERT INTO products (name, category, description, image_url, price, stock, status)
 SELECT '无线降噪蓝牙耳机 Pro', '数码', '主动降噪｜30小时超长续航｜Hi-Fi 音质｜IPX5 防水，通勤运动首选。', 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80', 299.00, 128, 1
@@ -74,9 +68,7 @@ INSERT INTO products (name, category, description, image_url, price, stock, stat
 SELECT '全天候健康智能手表 GT5', '数码', '1.43英寸 AMOLED 屏｜心率血氧监测｜14 天续航｜50 米防水。', 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80', 899.00, 43, 1
 WHERE NOT EXISTS (SELECT 1 FROM products WHERE name = '全天候健康智能手表 GT5');
 
--- ============================================
 -- 订单数据
--- ============================================
 INSERT INTO orders (order_no, user_id, total_amount, status, shipping_address, receiver_name, receiver_phone, remark)
 SELECT 'ORD20240601001', 2, 299.00, 1, '北京市朝阳区建国路 88 号 SOHO 现代城', '张三', '13800138001', '已付款，请尽快发货'
 WHERE NOT EXISTS (SELECT 1 FROM orders WHERE order_no = 'ORD20240601001');
@@ -89,9 +81,7 @@ INSERT INTO orders (order_no, user_id, total_amount, status, shipping_address, r
 SELECT 'ORD20240601003', 2, 1448.00, 2, '上海市浦东新区世纪大道 100 号环球金融中心', '李四', '13900139002', '小心轻放，易碎物品'
 WHERE NOT EXISTS (SELECT 1 FROM orders WHERE order_no = 'ORD20240601003');
 
--- ============================================
 -- 订单明细（product_id 对应 products 表自增 ID 1-12）
--- ============================================
 INSERT INTO order_item (order_id, product_id, product_name, sku_id, sku_code, price, quantity, sub_total)
 SELECT 1, 1, '无线降噪蓝牙耳机 Pro', 101, 'SKU-BT-PRO', 299.00, 1, 299.00
 WHERE NOT EXISTS (SELECT 1 FROM order_item WHERE order_id = 1 AND product_id = 1);

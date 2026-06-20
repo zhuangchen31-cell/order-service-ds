@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 - 页面未找到</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .error-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      text-align: center;
+      padding: 40px;
+    }
+    .error-code {
+      font-size: 120px;
+      font-weight: 900;
+      text-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+      animation: float 2s ease-in-out infinite;
+      line-height: 1;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
+    }
+    .error-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+    }
+    .error-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 16px 0;
+    }
+    .error-desc {
+      font-size: 16px;
+      opacity: 0.9;
+      margin-bottom: 30px;
+      max-width: 500px;
+      line-height: 1.6;
+    }
+    .error-actions {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .btn-home {
+      background: #fff;
+      color: #667eea;
+      padding: 14px 32px;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .btn-home:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 25px rgba(0,0,0,0.3);
+    }
+    .btn-back {
+      background: transparent;
+      color: #fff;
+      padding: 14px 32px;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      border: 2px solid rgba(255,255,255,0.5);
+      transition: all 0.3s;
+    }
+    .btn-back:hover {
+      background: rgba(255,255,255,0.15);
+      border-color: #fff;
+    }
+    .countdown {
+      margin-top: 30px;
+      font-size: 14px;
+      opacity: 0.8;
+    }
+    .countdown span {
+      font-weight: 700;
+      font-size: 18px;
+      color: #ffd700;
+    }
+  </style>
+</head>
+<body>
+  <div class="error-page">
+    <div class="error-icon">🔮</div>
+    <div class="error-code">404</div>
+    <div class="error-title">哎呀！页面走丢了</div>
+    <div class="error-desc">
+      您访问的页面不存在或已被移除。<br>
+      请检查URL是否正确，或返回首页继续购物。
+    </div>
+    <div class="error-actions">
+      <a href="/" class="btn-home">🏠 返回首页</a>
+      <a href="/product.html" class="btn-back">🛒 逛逛商品</a>
+      <a href="javascript:history.back()" class="btn-back">↩ 返回上页</a>
+    </div>
+    <div class="countdown">
+      将在 <span id="countdown-num">10</span> 秒后自动跳转到首页
+    </div>
+  </div>
+
+  <script>
+    // 404页面自动跳转倒计时
+    let seconds = 10;
+    const countdownEl = document.getElementById('countdown-num');
+    const timer = setInterval(() => {
+      seconds--;
+      if (countdownEl) countdownEl.textContent = seconds;
+      if (seconds <= 0) {
+        clearInterval(timer);
+        window.location.href = '/';
+      }
+    }, 1000);
+  </script>
+</body>
+</html>

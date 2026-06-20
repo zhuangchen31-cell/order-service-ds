@@ -2,13 +2,11 @@ package com.ecommerce.order.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import java.time.LocalDateTime;
 
-/**
- * 用户实体
- */
 @Data
 @TableName("users")
 public class User {
@@ -19,15 +17,18 @@ public class User {
 
     private String password;
 
-    private String phone;
-
     private String email;
 
-    private String role;
+    private String phone;
 
-    private Integer enabled;
+    private String nickname;
+
+    private Integer status;
 
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    @TableLogic
+    private Integer deleted;
 }
