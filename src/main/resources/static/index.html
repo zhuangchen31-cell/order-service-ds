@@ -3,220 +3,129 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>电商订单管理系统</title>
+  <title>电商购物平台</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
+  <section id="auth-view" class="auth-view">
+    <form id="login-form" class="auth-panel">
+      <h1>电商购物平台</h1>
+      <p>登录后浏览商品、管理购物车并查询订单</p>
+      <label>用户名<input id="login-username" autocomplete="username" value="test"></label>
+      <label>密码<input id="login-password" type="password" autocomplete="current-password" value="123456"></label>
+      <button type="submit" class="primary">登录</button>
+      <button type="button" id="show-register" class="ghost">注册新账号</button>
+    </form>
+    <form id="register-form" class="auth-panel hidden">
+      <h1>创建账号</h1>
+      <p>注册后自动登录</p>
+      <label>用户名<input id="reg-username" autocomplete="username"></label>
+      <label>密码<input id="reg-password" type="password" autocomplete="new-password"></label>
+      <label>手机号<input id="reg-phone"></label>
+      <label>邮箱<input id="reg-email" type="email"></label>
+      <button type="submit" class="primary">注册</button>
+      <button type="button" id="show-login" class="ghost">返回登录</button>
+    </form>
+  </section>
 
-  <!-- ==================== 登录/注册页 ==================== -->
-  <div id="app-auth">
-    <div class="auth-wrapper">
-      <div class="auth-card">
-
-        <!-- 登录表单 -->
-        <form id="form-login">
-          <h2>🔐 电商订单系统</h2>
-          <p class="subtitle">登录您的账号</p>
-          <div class="form-group">
-            <label>用户名</label>
-            <input type="text" id="login-username" placeholder="请输入用户名" autocomplete="username">
-          </div>
-          <div class="form-group">
-            <label>密码</label>
-            <input type="password" id="login-password" placeholder="请输入密码" autocomplete="current-password">
-          </div>
-          <button type="submit" class="btn btn-primary">登 录</button>
-          <p class="auth-link">
-            还没有账号？<a onclick="App.toggleAuthForm('register')">立即注册</a>
-          </p>
-        </form>
-
-        <!-- 注册表单 -->
-        <form id="form-register" class="hidden">
-          <h2>📝 创建账号</h2>
-          <p class="subtitle">注册新用户</p>
-          <div class="form-group">
-            <label>用户名 *</label>
-            <input type="text" id="reg-username" placeholder="3-50个字符" autocomplete="username">
-          </div>
-          <div class="form-group">
-            <label>密码 *</label>
-            <input type="password" id="reg-password" placeholder="至少6个字符" autocomplete="new-password">
-          </div>
-          <div class="form-group">
-            <label>手机号</label>
-            <input type="text" id="reg-phone" placeholder="选填">
-          </div>
-          <div class="form-group">
-            <label>邮箱</label>
-            <input type="email" id="reg-email" placeholder="选填">
-          </div>
-          <button type="submit" class="btn btn-primary">注 册</button>
-          <p class="auth-link">
-            已有账号？<a onclick="App.toggleAuthForm('login')">立即登录</a>
-          </p>
-        </form>
-
-      </div>
-    </div>
-  </div>
-
-  <!-- ==================== 主应用 ==================== -->
-  <div id="app-main" class="hidden">
-
-    <!-- 顶部导航 -->
-    <header class="header">
-      <div class="logo">🛒 电商订单管理系统</div>
-      <div class="user-info">
-        <span>👤 <span id="header-username">用户</span></span>
-        <button class="btn btn-default" style="height:32px;padding:0 14px;font-size:13px;" id="btn-logout">退出登录</button>
+  <section id="main-view" class="hidden">
+    <header class="topbar">
+      <div class="brand" onclick="App.navigate('products')">电商购物平台</div>
+      <nav>
+        <button data-route="products">商品</button>
+        <button data-route="cart">购物车 <span id="cart-badge">0</span></button>
+        <button data-route="orders">订单</button>
+      </nav>
+      <div class="user-box">
+        <span id="current-user">用户</span>
+        <button id="logout-btn" class="ghost small">退出</button>
       </div>
     </header>
 
-    <div class="container">
-
-      <!-- 统计卡片 -->
-      <div class="stats-row">
-        <div class="stat-card"><div class="stat-value" id="stat-total">0</div><div class="stat-label">总订单数</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-pending">0</div><div class="stat-label">待支付</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-paid">0</div><div class="stat-label">已支付</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-shipped">0</div><div class="stat-label">已发货</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-received">0</div><div class="stat-label">已收货</div></div>
-        <div class="stat-card"><div class="stat-value" id="stat-today">0</div><div class="stat-label">今日订单</div></div>
-      </div>
-
-      <!-- 搜索栏 -->
-      <div class="search-bar">
-        <div class="form-group">
-          <label>用户ID</label>
-          <input type="number" id="filter-userId" placeholder="按用户筛选">
+    <main class="layout">
+      <section id="page-products" class="page">
+        <div class="section-head">
+          <div>
+            <h2>商品列表</h2>
+            <p>支持分页查询和分类筛选，每次翻页都会请求后端接口</p>
+          </div>
+          <div class="filters">
+            <input id="product-keyword" placeholder="搜索商品">
+            <select id="product-category">
+              <option value="">全部分类</option>
+              <option value="数码">数码</option>
+              <option value="箱包">箱包</option>
+              <option value="家电">家电</option>
+              <option value="家居">家居</option>
+              <option value="运动">运动</option>
+            </select>
+            <button id="product-search" class="primary compact">查询</button>
+          </div>
         </div>
-        <div class="form-group">
-          <label>订单状态</label>
-          <select id="filter-status">
-            <option value="">全部</option>
-            <option value="0">待支付</option>
-            <option value="1">已支付</option>
-            <option value="2">已发货</option>
-            <option value="3">已收货</option>
-            <option value="4">已取消</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>关键词</label>
-          <input type="text" id="filter-keyword" placeholder="订单号/收货人/电话">
-        </div>
-        <div class="form-group">
-          <label>开始日期</label>
-          <input type="date" id="filter-startDate">
-        </div>
-        <div class="form-group">
-          <label>结束日期</label>
-          <input type="date" id="filter-endDate">
-        </div>
-        <button class="btn btn-primary" id="btn-search">🔍 查询</button>
-        <button class="btn btn-default" id="btn-reset">↻ 重置</button>
-        <button class="btn btn-success" onclick="App.showCreateModal()">＋ 新建订单</button>
-      </div>
-
-      <!-- 订单表格 -->
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>订单编号</th>
-              <th>用户ID</th>
-              <th>金额</th>
-              <th>状态</th>
-              <th>收货人</th>
-              <th>电话</th>
-              <th>地址</th>
-              <th>创建时间</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody id="order-tbody">
-            <tr><td colspan="9" style="text-align:center;padding:40px;color:#999;">加载中...</td></tr>
-          </tbody>
-        </table>
+        <div id="product-grid" class="product-grid"></div>
         <div class="pagination">
-          <div id="pagination-info"></div>
-          <div class="pages" id="pagination-pages"></div>
+          <span id="product-page-info"></span>
+          <div>
+            <button id="product-prev" class="ghost small">上一页</button>
+            <button id="product-next" class="ghost small">下一页</button>
+          </div>
         </div>
-      </div>
+      </section>
 
-    </div>
-  </div>
+      <section id="page-cart" class="page hidden">
+        <div class="section-head">
+          <div>
+            <h2>购物车</h2>
+            <p>全局状态由 cartStore.js 维护，模拟 Pinia 的集中式状态管理</p>
+          </div>
+          <button id="clear-cart" class="danger compact">清空购物车</button>
+        </div>
+        <div id="cart-list" class="cart-list"></div>
+        <div class="checkout-bar">
+          <span>合计：<strong id="cart-total">¥0.00</strong></span>
+          <button id="checkout-btn" class="primary compact">提交订单</button>
+        </div>
+      </section>
 
-  <!-- ==================== 查看详情 Modal ==================== -->
-  <div id="modal-view" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>📋 订单详情</h3>
-        <button class="modal-close">&times;</button>
-      </div>
-      <div class="modal-body"></div>
-      <div class="modal-footer">
-        <button class="btn btn-default" onclick="App.closeModal('modal-view')">关闭</button>
-      </div>
-    </div>
-  </div>
+      <section id="page-orders" class="page hidden">
+        <div class="section-head">
+          <div>
+            <h2>订单列表</h2>
+            <p>登录 Token 验证通过后查询当前平台订单</p>
+          </div>
+          <button id="refresh-orders" class="primary compact">刷新</button>
+        </div>
+        <div class="stats">
+          <span>总订单 <strong id="stat-total">0</strong></span>
+          <span>待支付 <strong id="stat-pending">0</strong></span>
+          <span>已支付 <strong id="stat-paid">0</strong></span>
+          <span>今日 <strong id="stat-today">0</strong></span>
+        </div>
+        <div class="table-card">
+          <table>
+            <thead><tr><th>订单号</th><th>用户ID</th><th>金额</th><th>状态</th><th>收货人</th><th>电话</th><th>时间</th></tr></thead>
+            <tbody id="order-body"></tbody>
+          </table>
+        </div>
+      </section>
 
-  <!-- ==================== 编辑/创建 Modal ==================== -->
-  <div id="modal-edit" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <h3 id="modal-edit-title">编辑订单</h3>
-        <button class="modal-close">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label>订单编号</label>
-          <input type="text" id="edit-orderNo" placeholder="留空自动生成">
-        </div>
-        <div class="form-group">
-          <label>用户ID *</label>
-          <input type="number" id="edit-userId" placeholder="请输入用户ID">
-        </div>
-        <div class="form-group">
-          <label>订单金额</label>
-          <input type="number" step="0.01" id="edit-totalAmount" placeholder="0.00">
-        </div>
-        <div class="form-group">
-          <label>订单状态</label>
-          <select id="edit-status">
-            <option value="0">待支付</option>
-            <option value="1">已支付</option>
-            <option value="2">已发货</option>
-            <option value="3">已收货</option>
-            <option value="4">已取消</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>收货人</label>
-          <input type="text" id="edit-receiverName" placeholder="收货人姓名">
-        </div>
-        <div class="form-group">
-          <label>联系电话</label>
-          <input type="text" id="edit-receiverPhone" placeholder="收货人电话">
-        </div>
-        <div class="form-group">
-          <label>收货地址</label>
-          <input type="text" id="edit-shippingAddress" placeholder="收货地址">
-        </div>
-        <div class="form-group">
-          <label>备注</label>
-          <input type="text" id="edit-remark" placeholder="订单备注">
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-default" onclick="App.closeModal('modal-edit')">取消</button>
-        <button class="btn btn-primary" id="btn-save-order">保存</button>
-      </div>
-    </div>
-  </div>
+      <section id="page-success" class="page result-page hidden">
+        <h2>下单成功</h2>
+        <p id="success-order-no">订单已创建</p>
+        <button class="primary compact" data-route="orders">查看订单</button>
+      </section>
 
-  <script src="/js/api.js"></script>
+      <section id="page-404" class="page result-page hidden">
+        <h2>404</h2>
+        <p>页面不存在，请返回商品列表继续浏览。</p>
+        <button class="primary compact" data-route="products">返回商品</button>
+      </section>
+    </main>
+  </section>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="/js/request.js"></script>
+  <script src="/js/cartStore.js"></script>
   <script src="/js/app.js"></script>
 </body>
 </html>

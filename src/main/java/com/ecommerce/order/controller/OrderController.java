@@ -1,66 +1,65 @@
 package com.ecommerce.order.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ecommerce.order.common.Result;
 import com.ecommerce.order.common.enums.OrderStatus;
+import com.ecommerce.order.common.exception.BusinessException;
 import com.ecommerce.order.entity.Order;
 import com.ecommerce.order.service.OrderService;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-/**
- * 订单控制器 - 提供订单CRUD及高级查询接口
- */
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
-
     private final OrderService orderService;
 
     public OrderController(OrderService orderService) {
         this.orderService = orderService;
     }
 
-    /**
-     * 创建订单
-     * POST /api/orders
-     */
     @PostMapping
     public Result createOrder(@RequestBody Order order) {
+        if (order.getUserId() == null || order.getUserId() <= 0) {
+            throw new BusinessException("用户ID不能为空");
+        }
+        if (order.getTotalAmount() == null) {
+            throw new BusinessException("订单金额不能为空");
+        }
         order.setCreatedAt(LocalDateTime.now());
         order.setUpdatedAt(LocalDateTime.now());
-        if (order.getOrderNo() == null || order.getOrderNo().isEmpty()) {
+        order.setStatus(order.getStatus() == null ? 0 : order.getStatus());
+        order.setDeleted(0);
+        if (!StringUtils.hasText(order.getOrderNo())) {
             order.setOrderNo("ORD" + System.currentTimeMillis());
         }
-        boolean success = orderService.save(order);
-        if (success) {
-            return Result.ok("订单创建成功").data(order);
-        }
-        return Result.fail("订单创建失败");
+        orderService.save(order);
+        return Result.ok("订单创建成功").data(order);
     }
 
-    /**
-     * 根据ID查询订单
-     * GET /api/orders/{id}
-     */
     @GetMapping("/{id}")
     public Result getOrderById(@PathVariable Long id) {
         Order order = orderService.getById(id);
-        if (order != null) {
-            return Result.ok(order);
+        if (order == null) {
+            throw new BusinessException("订单不存在");
         }
-        return Result.fail("订单不存在");
+        return Result.ok(order);
     }
 
-    /**
-     * 多条件分页查询订单列表
-     * GET /api/orders?userId=1&status=0&keyword=手机&startDate=2024-01-01&endDate=2024-12-31&pageNum=1&pageSize=10
-     */
     @GetMapping
     public Result getOrderList(
             @RequestParam(required = false) Long userId,
@@ -70,127 +69,86 @@ public class OrderController {
             @RequestParam(required = false) String endDate,
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {
-
-        Page<Order> page = new Page<>(pageNum, pageSize);
-        LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
-
-        // 按用户ID筛选
-        if (userId != null) {
-            wrapper.eq(Order::getUserId, userId);
-        }
-        // 按状态筛选
-        if (status != null) {
-            wrapper.eq(Order::getStatus, status);
-        }
-        // 关键词搜索（订单号/收货人/电话）
-        if (StringUtils.hasText(keyword)) {
-            wrapper.and(w -> w
-                    .like(Order::getOrderNo, keyword)
-                    .or()
-                    .like(Order::getReceiverName, keyword)
-                    .or()
-                    .like(Order::getReceiverPhone, keyword)
-            );
-        }
-        // 日期范围筛选
-        if (StringUtils.hasText(startDate)) {
-            wrapper.ge(Order::getCreatedAt, startDate + " 00:00:00");
-        }
-        if (StringUtils.hasText(endDate)) {
-            wrapper.le(Order::getCreatedAt, endDate + " 23:59:59");
-        }
-
-        wrapper.orderByDesc(Order::getCreatedAt);
-
-        IPage<Order> resultPage = orderService.page(page, wrapper);
-
-        return Result.ok(resultPage.getRecords())
-                .total(resultPage.getTotal())
-                .pageNum(resultPage.getCurrent())
-                .pageSize(resultPage.getSize())
-                .pages(resultPage.getPages());
+        Page<Order> page = new Page<>(Math.max(pageNum, 1), Math.max(pageSize, 1));
+        LambdaQueryWrapper<Order> wrapper = buildOrderWrapper(userId, status, keyword, startDate, endDate);
+        return Result.page(orderService.page(page, wrapper));
     }
 
-    /**
-     * 更新订单
-     * PUT /api/orders/{id}
-     */
     @PutMapping("/{id}")
     public Result updateOrder(@PathVariable Long id, @RequestBody Order order) {
+        if (orderService.getById(id) == null) {
+            throw new BusinessException("订单不存在");
+        }
         order.setId(id);
         order.setUpdatedAt(LocalDateTime.now());
-        boolean success = orderService.updateById(order);
-        if (success) {
-            return Result.ok("订单更新成功").data(order);
-        }
-        return Result.fail("订单更新失败");
+        orderService.updateById(order);
+        return Result.ok("订单更新成功").data(order);
     }
 
-    /**
-     * 删除订单（逻辑删除）
-     * DELETE /api/orders/{id}
-     */
     @DeleteMapping("/{id}")
     public Result deleteOrder(@PathVariable Long id) {
-        boolean success = orderService.removeById(id);
-        if (success) {
-            return Result.ok("订单删除成功");
+        if (!orderService.removeById(id)) {
+            throw new BusinessException("订单不存在或已删除");
         }
-        return Result.fail("订单删除失败");
+        return Result.ok("订单删除成功");
     }
 
-    /**
-     * 根据订单编号查询订单
-     * GET /api/orders/by-order-no/{orderNo}
-     */
     @GetMapping("/by-order-no/{orderNo}")
     public Result getOrderByOrderNo(@PathVariable String orderNo) {
         LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Order::getOrderNo, orderNo);
         Order order = orderService.getOne(wrapper);
-        if (order != null) {
-            return Result.ok(order);
+        if (order == null) {
+            throw new BusinessException("订单不存在");
         }
-        return Result.fail("订单不存在");
+        return Result.ok(order);
     }
 
-    /**
-     * 批量删除订单
-     * DELETE /api/orders/batch
-     */
     @DeleteMapping("/batch")
     public Result batchDeleteOrders(@RequestBody List<Long> ids) {
-        boolean success = orderService.removeByIds(ids);
-        if (success) {
-            return Result.ok("批量删除成功");
+        if (ids == null || ids.isEmpty()) {
+            throw new BusinessException("请选择要删除的订单");
         }
-        return Result.fail("批量删除失败");
+        orderService.removeByIds(ids);
+        return Result.ok("批量删除成功");
     }
 
-    /**
-     * 订单统计概览
-     * GET /api/orders/stats/overview
-     */
     @GetMapping("/stats/overview")
     public Result getOrderStats() {
         Map<String, Object> stats = new HashMap<>();
-
-        // 总订单数
         stats.put("totalOrders", orderService.count());
-
-        // 各状态订单数
         for (OrderStatus s : OrderStatus.values()) {
             LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(Order::getStatus, s.getCode());
             stats.put("status_" + s.getCode(), orderService.count(wrapper));
             stats.put("status_" + s.getCode() + "_desc", s.getDesc());
         }
-
-        // 今日订单
+        LocalDateTime start = LocalDateTime.now().toLocalDate().atStartOfDay();
         LambdaQueryWrapper<Order> todayWrapper = new LambdaQueryWrapper<>();
-        todayWrapper.apply("DATE(created_at) = CURDATE()");
+        todayWrapper.ge(Order::getCreatedAt, start);
         stats.put("todayOrders", orderService.count(todayWrapper));
-
         return Result.ok(stats);
+    }
+
+    private LambdaQueryWrapper<Order> buildOrderWrapper(Long userId, Integer status, String keyword, String startDate, String endDate) {
+        LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<>();
+        if (userId != null) {
+            wrapper.eq(Order::getUserId, userId);
+        }
+        if (status != null) {
+            wrapper.eq(Order::getStatus, status);
+        }
+        if (StringUtils.hasText(keyword)) {
+            wrapper.and(w -> w.like(Order::getOrderNo, keyword)
+                    .or().like(Order::getReceiverName, keyword)
+                    .or().like(Order::getReceiverPhone, keyword));
+        }
+        if (StringUtils.hasText(startDate)) {
+            wrapper.ge(Order::getCreatedAt, startDate + " 00:00:00");
+        }
+        if (StringUtils.hasText(endDate)) {
+            wrapper.le(Order::getCreatedAt, endDate + " 23:59:59");
+        }
+        return wrapper.orderByDesc(Order::getCreatedAt);
     }
 }

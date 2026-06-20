@@ -6,7 +6,6 @@ spring:
     name: order-service
   datasource:
     driver-class-name: org.h2.Driver
-    # H2 文件模式：数据保存在用户目录下，重启不丢失
     url: jdbc:h2:file:./data/ecommerce;MODE=MySQL;DB_CLOSE_DELAY=-1;AUTO_RECONNECT=TRUE
     username: sa
     password:
@@ -19,8 +18,12 @@ spring:
       mode: always
       schema-locations: classpath:schema.sql
       data-locations: classpath:data.sql
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: true
 
-# JWT 配置
 jwt:
   secret: YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY3ODkwYWJjZA==
   expiration: 86400000

@@ -1,418 +1,273 @@
-/**
- * 电商订单管理系统 - 主应用逻辑
- * 包含：登录/注册、订单列表查询、订单CRUD、统计概览
- */
 const App = (() => {
-  // ========== 工具函数 ==========
-  function $(sel) { return document.querySelector(sel); }
-  function $$(sel) { return document.querySelectorAll(sel); }
-  function escapeHtml(str) {
-    if (!str) return '';
+  const $ = (selector) => document.querySelector(selector);
+  const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+  const money = (value) => `¥${Number(value || 0).toFixed(2)}`;
+  const escapeHtml = (value) => {
     const div = document.createElement('div');
-    div.textContent = str;
+    div.textContent = value == null ? '' : String(value);
     return div.innerHTML;
-  }
-
-  // Toast 提示
-  function showToast(msg, type = 'success') {
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.textContent = msg;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-  }
-
-  // 格式化金额
-  function formatMoney(amount) {
-    return '¥' + (amount || 0).toFixed(2);
-  }
-
-  // 格式化日期
-  function formatDate(dateStr) {
-    if (!dateStr) return '-';
-    return new Date(dateStr).toLocaleString('zh-CN');
-  }
-
-  // 订单状态映射
-  const STATUS_MAP = {
-    0: '待支付', 1: '已支付', 2: '已发货', 3: '已收货', 4: '已取消'
   };
 
-  // ========== 页面状态 ==========
-  let currentPage = 1;
-  let totalPages = 1;
-  let editingOrderId = null;
+  const state = {
+    productPage: 1,
+    productPages: 1,
+    productTotal: 0,
+    pageSize: 8,
+  };
 
-  // ========== 页面切换 ==========
-  function showPage(pageId) {
-    $$('.page').forEach(p => p.classList.add('hidden'));
-    const target = $(`#page-${pageId}`);
-    if (target) target.classList.remove('hidden');
+  const statusMap = { 0: '待支付', 1: '已支付', 2: '已发货', 3: '已收货', 4: '已取消' };
+
+  function toast(message, type = 'success') {
+    const el = $('#toast');
+    el.textContent = message;
+    el.className = `toast ${type === 'error' ? 'error' : ''}`;
+    setTimeout(() => el.classList.add('hidden'), 2600);
   }
 
-  // ========== 认证 ==========
-  async function handleLogin(e) {
-    e.preventDefault();
-    const username = $('#login-username').value.trim();
-    const password = $('#login-password').value.trim();
-    if (!username || !password) {
-      showToast('请输入用户名和密码', 'error');
-      return;
-    }
+  function bindEvents() {
+    $('#login-form').addEventListener('submit', handleLogin);
+    $('#register-form').addEventListener('submit', handleRegister);
+    $('#show-register').addEventListener('click', () => toggleAuth('register'));
+    $('#show-login').addEventListener('click', () => toggleAuth('login'));
+    $('#logout-btn').addEventListener('click', logout);
+    $('#product-search').addEventListener('click', () => loadProducts(1));
+    $('#product-keyword').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') loadProducts(1);
+    });
+    $('#product-category').addEventListener('change', () => loadProducts(1));
+    $('#product-prev').addEventListener('click', () => loadProducts(state.productPage - 1));
+    $('#product-next').addEventListener('click', () => loadProducts(state.productPage + 1));
+    $('#clear-cart').addEventListener('click', () => {
+      CartStore.clear();
+      toast('购物车已清空');
+    });
+    $('#checkout-btn').addEventListener('click', checkout);
+    $('#refresh-orders').addEventListener('click', loadOrders);
+    $$('[data-route]').forEach(button => button.addEventListener('click', () => navigate(button.dataset.route)));
+  }
+
+  function toggleAuth(type) {
+    $('#login-form').classList.toggle('hidden', type !== 'login');
+    $('#register-form').classList.toggle('hidden', type !== 'register');
+  }
+
+  async function handleLogin(event) {
+    event.preventDefault();
     try {
-      const res = await API.login(username, password);
-      API.setToken(res.data.tokenInfo.token);
-      API.setUser(res.data.user);
-      showToast('登录成功');
-      showMainApp();
-    } catch (err) {
-      showToast(err.message, 'error');
+      const username = $('#login-username').value.trim();
+      const password = $('#login-password').value.trim();
+      if (!username || !password) throw new Error('请输入用户名和密码');
+      const res = await Request.api.login(username, password);
+      Request.setToken(res.data.tokenInfo.token);
+      Request.setUser(res.data.user);
+      await enterApp();
+      toast('登录成功');
+    } catch (error) {
+      toast(error.message, 'error');
     }
   }
 
-  async function handleRegister(e) {
-    e.preventDefault();
-    const username = $('#reg-username').value.trim();
-    const password = $('#reg-password').value.trim();
-    const phone = $('#reg-phone').value.trim();
-    const email = $('#reg-email').value.trim();
-    if (!username || !password) {
-      showToast('请填写用户名和密码', 'error');
-      return;
-    }
-    if (password.length < 6) {
-      showToast('密码长度至少6位', 'error');
-      return;
-    }
+  async function handleRegister(event) {
+    event.preventDefault();
     try {
-      const res = await API.register(username, password, phone, email);
-      API.setToken(res.data.tokenInfo.token);
-      API.setUser(res.data.user);
-      showToast('注册成功');
-      showMainApp();
-    } catch (err) {
-      showToast(err.message, 'error');
+      const username = $('#reg-username').value.trim();
+      const password = $('#reg-password').value.trim();
+      if (!username || password.length < 6) throw new Error('用户名不能为空，密码至少6位');
+      const res = await Request.api.register(username, password, $('#reg-phone').value.trim(), $('#reg-email').value.trim());
+      Request.setToken(res.data.tokenInfo.token);
+      Request.setUser(res.data.user);
+      await enterApp();
+      toast('注册成功');
+    } catch (error) {
+      toast(error.message, 'error');
     }
   }
 
-  function handleLogout() {
-    API.clearToken();
-    $('#app-main').classList.add('hidden');
-    $('#app-auth').classList.remove('hidden');
-    showToast('已退出登录');
+  function logout() {
+    Request.clearAuth();
+    $('#main-view').classList.add('hidden');
+    $('#auth-view').classList.remove('hidden');
+    toggleAuth('login');
+    toast('已退出登录');
   }
 
-  function showMainApp() {
-    $('#app-auth').classList.add('hidden');
-    $('#app-main').classList.remove('hidden');
-    const user = API.getUser();
-    if (user) {
-      $('#header-username').textContent = user.username;
+  async function enterApp() {
+    const user = Request.getUser();
+    $('#current-user').textContent = user ? user.username : '用户';
+    $('#auth-view').classList.add('hidden');
+    $('#main-view').classList.remove('hidden');
+    navigate(location.hash.replace('#/', '') || 'products');
+  }
+
+  function navigate(route) {
+    const known = ['products', 'cart', 'orders', 'success'];
+    const target = known.includes(route) ? route : '404';
+    $$('.page').forEach(page => page.classList.add('hidden'));
+    $(`#page-${target}`).classList.remove('hidden');
+    $$('nav button').forEach(button => button.classList.toggle('active', button.dataset.route === target));
+    history.replaceState(null, '', `#/${target}`);
+
+    if (target === 'products') loadProducts(state.productPage || 1);
+    if (target === 'orders') {
+      loadStats();
+      loadOrders();
     }
-    loadOrderList();
-    loadStats();
+    if (target === 'cart') renderCart(CartStore.getState());
   }
 
-  function toggleAuthForm(form) {
-    if (form === 'login') {
-      $('#form-login').classList.remove('hidden');
-      $('#form-register').classList.add('hidden');
-    } else {
-      $('#form-login').classList.add('hidden');
-      $('#form-register').classList.remove('hidden');
-    }
-  }
-
-  // ========== 订单列表 ==========
-  async function loadOrderList(page = 1) {
-    currentPage = page;
-    const params = {
-      pageNum: page,
-      pageSize: 10,
-    };
-
-    const userId = $('#filter-userId').value.trim();
-    const status = $('#filter-status').value;
-    const keyword = $('#filter-keyword').value.trim();
-    const startDate = $('#filter-startDate').value;
-    const endDate = $('#filter-endDate').value;
-
-    if (userId) params.userId = userId;
-    if (status) params.status = status;
-    if (keyword) params.keyword = keyword;
-    if (startDate) params.startDate = startDate;
-    if (endDate) params.endDate = endDate;
-
+  async function loadProducts(page = 1) {
+    if (page < 1 || page > state.productPages && state.productPages > 0) return;
+    state.productPage = page;
+    $('#product-grid').innerHTML = '<div class="empty">商品加载中...</div>';
     try {
-      const res = await API.getOrders(params);
-      totalPages = res.pages || 1;
-      renderOrderTable(res.data || []);
-      renderPagination(res.total || 0);
-    } catch (err) {
-      showToast('加载订单失败: ' + err.message, 'error');
+      const res = await Request.api.products({
+        pageNum: page,
+        pageSize: state.pageSize,
+        status: 1,
+        keyword: $('#product-keyword').value.trim(),
+        category: $('#product-category').value,
+      });
+      state.productTotal = res.total || 0;
+      state.productPages = res.pages || 1;
+      renderProducts(res.data || []);
+      $('#product-page-info').textContent = `共 ${state.productTotal} 件商品，第 ${state.productPage}/${state.productPages} 页`;
+      $('#product-prev').disabled = state.productPage <= 1;
+      $('#product-next').disabled = state.productPage >= state.productPages;
+    } catch (error) {
+      $('#product-grid').innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
     }
   }
 
-  function renderOrderTable(orders) {
-    const tbody = $('#order-tbody');
-    if (!orders || orders.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:#999;">暂无订单数据</td></tr>';
+  function renderProducts(products) {
+    if (!products.length) {
+      $('#product-grid').innerHTML = '<div class="empty">暂无商品</div>';
       return;
     }
-    tbody.innerHTML = orders.map(o => `
-      <tr>
-        <td><strong>${escapeHtml(o.orderNo)}</strong></td>
-        <td>${o.userId}</td>
-        <td>${formatMoney(o.totalAmount)}</td>
-        <td><span class="status-tag status-${o.status}">${STATUS_MAP[o.status] || '未知'}</span></td>
-        <td>${escapeHtml(o.receiverName || '-')}</td>
-        <td>${escapeHtml(o.receiverPhone || '-')}</td>
-        <td>${escapeHtml(o.shippingAddress || '-')}</td>
-        <td>${formatDate(o.createdAt)}</td>
-        <td class="actions">
-          <button class="btn btn-primary" style="height:30px;padding:0 10px;font-size:12px;"
-                  onclick="App.viewOrder(${o.id})">详情</button>
-          <button class="btn btn-warning" style="height:30px;padding:0 10px;font-size:12px;"
-                  onclick="App.editOrder(${o.id})">编辑</button>
-          <button class="btn btn-danger" style="height:30px;padding:0 10px;font-size:12px;"
-                  onclick="App.confirmDelete(${o.id}, '${escapeHtml(o.orderNo)}')">删除</button>
-        </td>
-      </tr>
+    $('#product-grid').innerHTML = products.map(product => `
+      <article class="product-card">
+        <div class="img-wrap">
+          <img src="${escapeHtml(product.imageUrl || '')}" alt="${escapeHtml(product.name)}" loading="lazy">
+        </div>
+        <div class="body">
+          <div class="meta"><span class="tag">${escapeHtml(product.category)}</span><span>库存 ${product.stock}</span></div>
+          <h3>${escapeHtml(product.name)}</h3>
+          <p>${escapeHtml(product.description || '')}</p>
+          <div class="meta"><span class="price">${money(product.price)}</span><button class="primary compact" onclick='App.addToCart(${JSON.stringify(product)})'>加入购物车</button></div>
+        </div>
+      </article>
     `).join('');
   }
 
-  function renderPagination(total) {
-    const container = $('#pagination-info');
-    container.innerHTML = `<span class="total">共 ${total} 条记录，第 ${currentPage}/${totalPages} 页</span>`;
-
-    const pagesDiv = $('#pagination-pages');
-    let html = `<button ${currentPage <= 1 ? 'disabled' : ''} onclick="App.goToPage(${currentPage - 1})">‹</button>`;
-    for (let i = 1; i <= totalPages; i++) {
-      if (totalPages > 7 && i > 3 && i < totalPages - 2 && Math.abs(i - currentPage) > 1) {
-        if (i === 4) html += '<button disabled>…</button>';
-        continue;
-      }
-      html += `<button class="${i === currentPage ? 'active' : ''}" onclick="App.goToPage(${i})">${i}</button>`;
-    }
-    html += `<button ${currentPage >= totalPages ? 'disabled' : ''} onclick="App.goToPage(${currentPage + 1})">›</button>`;
-    pagesDiv.innerHTML = html;
+  function addToCart(product) {
+    CartStore.add(product);
+    toast('已加入购物车');
   }
 
-  function goToPage(page) {
-    if (page >= 1 && page <= totalPages) loadOrderList(page);
-  }
-
-  function searchOrders() {
-    loadOrderList(1);
-  }
-
-  function resetFilters() {
-    $('#filter-userId').value = '';
-    $('#filter-status').value = '';
-    $('#filter-keyword').value = '';
-    $('#filter-startDate').value = '';
-    $('#filter-endDate').value = '';
-    loadOrderList(1);
-  }
-
-  // ========== 订单详情 ==========
-  async function viewOrder(id) {
-    try {
-      const res = await API.getOrderById(id);
-      const o = res.data;
-      // 加载订单明细
-      let itemsHtml = '';
-      try {
-        const itemsRes = await API.getOrderItems(id);
-        if (itemsRes.data && itemsRes.data.length > 0) {
-          itemsHtml = itemsRes.data.map(item => `
-            <tr>
-              <td>${item.productId}</td>
-              <td>${escapeHtml(item.productName)}</td>
-              <td>${escapeHtml(item.skuCode || '-')}</td>
-              <td>${formatMoney(item.price)}</td>
-              <td>${item.quantity}</td>
-              <td>${formatMoney(item.subTotal)}</td>
-            </tr>
-          `).join('');
-        }
-      } catch (e) { /* 忽略明细加载错误 */ }
-
-      const modal = $('#modal-view');
-      modal.querySelector('.modal-body').innerHTML = `
-        <div style="margin-bottom:16px">
-          <strong>订单编号：</strong>${escapeHtml(o.orderNo)}<br>
-          <strong>订单状态：</strong><span class="status-tag status-${o.status}">${STATUS_MAP[o.status]}</span><br>
-          <strong>下单时间：</strong>${formatDate(o.createdAt)}<br>
-          <strong>更新时间：</strong>${formatDate(o.updatedAt)}
-        </div>
-        <div style="margin-bottom:16px">
-          <strong>收货人：</strong>${escapeHtml(o.receiverName || '-')}<br>
-          <strong>联系电话：</strong>${escapeHtml(o.receiverPhone || '-')}<br>
-          <strong>收货地址：</strong>${escapeHtml(o.shippingAddress || '-')}<br>
-          <strong>备注：</strong>${escapeHtml(o.remark || '-')}
-        </div>
-        <div>
-          <strong>订单金额：</strong><span style="font-size:18px;color:#F56C6C;">${formatMoney(o.totalAmount)}</span>
-        </div>
-        ${itemsHtml ? `
-        <div style="margin-top:16px">
-          <strong>商品明细：</strong>
-          <table style="margin-top:8px;border:1px solid #eee">
-            <thead><tr><th>商品ID</th><th>商品名称</th><th>SKU</th><th>单价</th><th>数量</th><th>小计</th></tr></thead>
-            <tbody>${itemsHtml}</tbody>
-          </table>
-        </div>` : ''}
-      `;
-      modal.classList.remove('hidden');
-    } catch (err) {
-      showToast('加载订单详情失败: ' + err.message, 'error');
-    }
-  }
-
-  // ========== 订单编辑 ==========
-  async function editOrder(id) {
-    try {
-      const res = await API.getOrderById(id);
-      const o = res.data;
-      editingOrderId = id;
-      $('#edit-orderNo').value = o.orderNo || '';
-      $('#edit-userId').value = o.userId || '';
-      $('#edit-totalAmount').value = o.totalAmount || '';
-      $('#edit-status').value = o.status ?? 0;
-      $('#edit-receiverName').value = o.receiverName || '';
-      $('#edit-receiverPhone').value = o.receiverPhone || '';
-      $('#edit-shippingAddress').value = o.shippingAddress || '';
-      $('#edit-remark').value = o.remark || '';
-      $('#modal-edit-title').textContent = '编辑订单';
-      $('#modal-edit').classList.remove('hidden');
-    } catch (err) {
-      showToast('加载订单失败: ' + err.message, 'error');
-    }
-  }
-
-  function showCreateModal() {
-    editingOrderId = null;
-    $('#edit-orderNo').value = '';
-    $('#edit-userId').value = '';
-    $('#edit-totalAmount').value = '';
-    $('#edit-status').value = 0;
-    $('#edit-receiverName').value = '';
-    $('#edit-receiverPhone').value = '';
-    $('#edit-shippingAddress').value = '';
-    $('#edit-remark').value = '';
-    $('#modal-edit-title').textContent = '创建订单';
-    $('#modal-edit').classList.remove('hidden');
-  }
-
-  async function saveOrder() {
-    const order = {
-      orderNo: $('#edit-orderNo').value.trim() || ('ORD' + Date.now()),
-      userId: parseInt($('#edit-userId').value) || 0,
-      totalAmount: parseFloat($('#edit-totalAmount').value) || 0,
-      status: parseInt($('#edit-status').value) || 0,
-      receiverName: $('#edit-receiverName').value.trim(),
-      receiverPhone: $('#edit-receiverPhone').value.trim(),
-      shippingAddress: $('#edit-shippingAddress').value.trim(),
-      remark: $('#edit-remark').value.trim(),
-    };
-
-    if (!order.userId) {
-      showToast('请输入用户ID', 'error');
+  function renderCart(cart) {
+    $('#cart-badge').textContent = cart.totalCount;
+    $('#cart-total').textContent = money(cart.totalAmount);
+    if (!cart.items.length) {
+      $('#cart-list').innerHTML = '<div class="empty">购物车为空</div>';
       return;
     }
+    $('#cart-list').innerHTML = cart.items.map(item => `
+      <div class="cart-item">
+        <img src="${escapeHtml(item.imageUrl || '')}" alt="${escapeHtml(item.name)}">
+        <div>
+          <strong>${escapeHtml(item.name)}</strong>
+          <p>${escapeHtml(item.category)} · ${money(item.price)}</p>
+        </div>
+        <div class="cart-actions">
+          <input type="number" min="1" value="${item.quantity}" onchange="App.changeCartQuantity(${item.id}, this.value)">
+          <strong>${money(item.price * item.quantity)}</strong>
+          <button class="danger small" onclick="App.removeFromCart(${item.id})">删除</button>
+        </div>
+      </div>
+    `).join('');
+  }
 
+  function removeFromCart(id) {
+    CartStore.remove(id);
+    toast('商品已删除');
+  }
+
+  function changeCartQuantity(id, quantity) {
+    CartStore.changeQuantity(id, quantity);
+  }
+
+  async function checkout() {
+    const cart = CartStore.getState();
+    const user = Request.getUser();
+    if (!cart.items.length) {
+      toast('请先添加商品', 'error');
+      return;
+    }
     try {
-      if (editingOrderId) {
-        await API.updateOrder(editingOrderId, order);
-        showToast('订单更新成功');
-      } else {
-        await API.createOrder(order);
-        showToast('订单创建成功');
+      const res = await Request.api.createOrder({
+        userId: user && user.id ? user.id : 2,
+        totalAmount: cart.totalAmount,
+        status: 1,
+        receiverName: user ? user.username : '测试用户',
+        receiverPhone: user && user.phone ? user.phone : '13800138000',
+        shippingAddress: '默认收货地址',
+        remark: `购物车下单：${cart.items.map(item => `${item.name}x${item.quantity}`).join('，')}`,
+      });
+      CartStore.clear();
+      $('#success-order-no').textContent = `订单号：${res.data.orderNo}`;
+      navigate('success');
+    } catch (error) {
+      toast(error.message, 'error');
+    }
+  }
+
+  async function loadOrders() {
+    $('#order-body').innerHTML = '<tr><td colspan="7">订单加载中...</td></tr>';
+    try {
+      const res = await Request.api.orders({ pageNum: 1, pageSize: 20 });
+      const orders = res.data || [];
+      if (!orders.length) {
+        $('#order-body').innerHTML = '<tr><td colspan="7">暂无订单</td></tr>';
+        return;
       }
-      closeModal('modal-edit');
-      loadOrderList(currentPage);
-      loadStats();
-    } catch (err) {
-      showToast('保存失败: ' + err.message, 'error');
+      $('#order-body').innerHTML = orders.map(order => `
+        <tr>
+          <td>${escapeHtml(order.orderNo)}</td>
+          <td>${order.userId}</td>
+          <td>${money(order.totalAmount)}</td>
+          <td>${statusMap[order.status] || '未知'}</td>
+          <td>${escapeHtml(order.receiverName || '-')}</td>
+          <td>${escapeHtml(order.receiverPhone || '-')}</td>
+          <td>${order.createdAt ? new Date(order.createdAt).toLocaleString('zh-CN') : '-'}</td>
+        </tr>
+      `).join('');
+    } catch (error) {
+      $('#order-body').innerHTML = `<tr><td colspan="7">${escapeHtml(error.message)}</td></tr>`;
     }
   }
 
-  function confirmDelete(id, orderNo) {
-    if (confirm(`确定要删除订单 ${orderNo} 吗？`)) {
-      API.deleteOrder(id).then(() => {
-        showToast('删除成功');
-        loadOrderList(currentPage);
-        loadStats();
-      }).catch(err => showToast('删除失败: ' + err.message, 'error'));
-    }
-  }
-
-  // ========== 统计 ==========
   async function loadStats() {
     try {
-      const res = await API.getOrderStats();
-      const d = res.data || {};
-      $('#stat-total').textContent = d.totalOrders || 0;
-      $('#stat-pending').textContent = d.status_0 || 0;
-      $('#stat-paid').textContent = d.status_1 || 0;
-      $('#stat-shipped').textContent = d.status_2 || 0;
-      $('#stat-received').textContent = d.status_3 || 0;
-      $('#stat-today').textContent = d.todayOrders || 0;
-    } catch (e) { /* 忽略统计错误 */ }
-  }
-
-  // ========== Modal 操作 ==========
-  function closeModal(modalId) {
-    $(`#${modalId}`).classList.add('hidden');
-  }
-
-  // ========== 初始化 ==========
-  function init() {
-    // 登录事件
-    $('#form-login').addEventListener('submit', handleLogin);
-    $('#form-register').addEventListener('submit', handleRegister);
-    $('#btn-logout').addEventListener('click', handleLogout);
-
-    // 筛选事件
-    $('#btn-search').addEventListener('click', searchOrders);
-    $('#btn-reset').addEventListener('click', resetFilters);
-    $('#filter-keyword').addEventListener('keydown', e => {
-      if (e.key === 'Enter') searchOrders();
-    });
-
-    // Modal 关闭
-    $$('.modal-close, .modal-overlay').forEach(el => {
-      el.addEventListener('click', function(e) {
-        if (e.target === this || this.classList.contains('modal-close')) {
-          const modal = this.closest('.modal-overlay');
-          if (modal) modal.classList.add('hidden');
-        }
-      });
-    });
-
-    // 编辑保存
-    $('#btn-save-order').addEventListener('click', saveOrder);
-
-    // 检查已登录状态
-    if (API.isLoggedIn()) {
-      showMainApp();
+      const res = await Request.api.orderStats();
+      const data = res.data || {};
+      $('#stat-total').textContent = data.totalOrders || 0;
+      $('#stat-pending').textContent = data.status_0 || 0;
+      $('#stat-paid').textContent = data.status_1 || 0;
+      $('#stat-today').textContent = data.todayOrders || 0;
+    } catch (error) {
+      toast(error.message, 'error');
     }
   }
 
-  // ========== 公开方法 ==========
-  return {
-    init,
-    goToPage,
-    searchOrders,
-    resetFilters,
-    viewOrder,
-    editOrder,
-    showCreateModal,
-    confirmDelete,
-    closeModal: (id) => closeModal(id),
-    toggleAuthForm,
-  };
+  function init() {
+    bindEvents();
+    CartStore.subscribe(renderCart);
+    window.addEventListener('hashchange', () => navigate(location.hash.replace('#/', '') || 'products'));
+    if (Request.getToken()) {
+      enterApp();
+    }
+  }
+
+  return { init, navigate, addToCart, removeFromCart, changeCartQuantity };
 })();
 
-document.addEventListener('DOMContentLoaded', () => App.init());
+document.addEventListener('DOMContentLoaded', App.init);
