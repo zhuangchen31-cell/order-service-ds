@@ -6,7 +6,7 @@ import com.ecommerce.order.entity.User;
 import com.ecommerce.order.mapper.UserMapper;
 import com.ecommerce.order.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,14 +15,13 @@ import java.time.LocalDateTime;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
     @Autowired
-    private BCryptPasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public User findByUsername(String username) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getUsername, username);
-        wrapper.eq(User::getDeleted, 0);
-        return baseMapper.selectOne(wrapper);
+        return getOne(wrapper);
     }
 
     @Override
@@ -31,20 +30,29 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (user == null) {
             return false;
         }
+        if (user.getEnabled() != null && user.getEnabled() == 0) {
+            return false;
+        }
         return passwordEncoder.matches(password, user.getPassword());
     }
 
     @Override
-    public User register(User user) {
-        User existing = findByUsername(user.getUsername());
-        if (existing != null) {
+    public User register(String username, String password, String phone, String email) {
+        User exist = findByUsername(username);
+        if (exist != null) {
             return null;
         }
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setStatus(1);
+
+        User user = new User();
+        user.setUsername(username);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setPhone(phone);
+        user.setEmail(email);
+        user.setRole("USER");
+        user.setEnabled(1);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
-        user.setDeleted(0);
+
         save(user);
         return user;
     }
